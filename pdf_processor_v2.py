@@ -14,6 +14,9 @@ class PDFProcessor:
     def __init__(self):
         self.students_data = defaultdict(dict)
         self.series_data = defaultdict(list)
+        # Cache simples para agregações (invalidado a cada novo processamento)
+        self._cache_series_summary = None
+        self._cache_global_discipline_summary = None
         
     def extract_text_from_pdf(self, pdf_path):
         """Extrai texto de um arquivo PDF usando pdfplumber prioritariamente"""
@@ -269,39 +272,42 @@ class PDFProcessor:
         # Limpar dados anteriores
         self.students_data.clear()
         self.series_data.clear()
-        
+        # Invalidar caches
+        self._cache_series_summary = None
+        self._cache_global_discipline_summary = None
+
         pdf_files = [f for f in os.listdir(directory) if f.lower().endswith('.pdf')]
         total_students = 0
-        
+
         for pdf_file in pdf_files:
             pdf_path = os.path.join(directory, pdf_file)
             print(f"Processando: {pdf_file}")
-            
+
             text = self.extract_text_from_pdf(pdf_path)
             if text:
                 students_list = self.parse_student_data(text, pdf_file)
-                
+
                 for student_data in students_list:
                     if student_data and student_data["nome"]:
                         serie = student_data["serie"]
                         nome = student_data["nome"]
-                        
+
                         if serie not in self.students_data:
                             self.students_data[serie] = {}
-                        
+
                         self.students_data[serie][nome] = student_data
-                        
+
                         if nome not in self.series_data[serie]:
                             self.series_data[serie].append(nome)
-                        
+
                         total_students += 1
                         print(f"  → {nome} ({serie}) - {len(student_data['disciplinas'])} disciplinas")
-        
+
         print(f"\nProcessamento concluído!")
         print(f"- {len(pdf_files)} arquivos processados")
         print(f"- {total_students} alunos encontrados")
         print(f"- Séries: {list(self.students_data.keys())}")
-        
+
         # Estatísticas por série
         for serie, alunos in self.students_data.items():
             print(f"  {serie}: {len(alunos)} alunos")
@@ -349,22 +355,261 @@ class PDFProcessor:
         return {k: v for k, v in relatorio.items() if v}
     
     def get_low_attendance_report(self):
-        """Gera relatório de estudantes com frequência abaixo de 75%"""
+        """Relatório de estudantes por série com disciplinas cuja frequência semestral < 75%.
+        Estrutura:
+        {
+          '1º ano': [
+             {
+               'nome': 'Aluno X',
+               'frequencia_media_aluno': 72.3,
+               'disciplinas_freq_baixa': [
+                   { 'disciplina': 'Matemática', 'freq_semestral': 60, 'freq_1bim': 55, 'freq_2bim': 65, 'total_faltas': 18 }
+               ],
+               'total_disciplinas_freq_baixa': 2,
+               'risco_nivel': 'ALTO',
+               'menor_freq': 60
+             }, ...
+          ], ...
+        }
+        """
         relatorio = {}
-        
         for serie, estudantes in self.students_data.items():
-            relatorio[serie] = []
-            
+            alunos_lista = []
             for nome, dados in estudantes.items():
-                frequencia = dados.get('frequencia_media', 100)
-                total_faltas = dados.get('total_faltas', 0)
-                
-                if frequencia < 75:
-                    relatorio[serie].append({
-                        "nome": nome,
-                        "frequencia": frequencia,
-                        "total_faltas": total_faltas,
-                        "risco_nivel": "ALTO" if frequencia < 60 else "MÉDIO"
+                disciplinas_baixa = []
+                for disc in dados.get('disciplinas', []):
+                    freq = disc.get('freq_semestral', 0)
+                    if 0 < freq < 75:
+                        disciplinas_baixa.append({
+                            'disciplina': disc['nome'],
+                            'freq_semestral': freq,
+                            'freq_1bim': disc.get('freq_1bim', 0),
+                            'freq_2bim': disc.get('freq_2bim', 0),
+                            'total_faltas': disc.get('total_faltas', 0)
+                        })
+                if disciplinas_baixa:
+                    min_freq = min(d['freq_semestral'] for d in disciplinas_baixa)
+                    risco_nivel = 'ALTO' if min_freq < 60 else 'MÉDIO'
+                    alunos_lista.append({
+                        'nome': nome,
+                        'frequencia_media_aluno': dados.get('frequencia_media', 0),
+                        'disciplinas_freq_baixa': disciplinas_baixa,
+                        'total_disciplinas_freq_baixa': len(disciplinas_baixa),
+                        'risco_nivel': risco_nivel,
+                        'menor_freq': min_freq
                     })
-        
-        return {k: v for k, v in relatorio.items() if v}
+            if alunos_lista:
+                relatorio[serie] = alunos_lista
+        return relatorio
+
+    def get_low_attendance_by_discipline_report(self):
+        """Relatório de frequência baixa (<75%) por disciplina para cada aluno (usa freq_semestral da disciplina)."""
+        relatorio = {}
+        for serie, estudantes in self.students_data.items():
+            alunos_lista = []
+            for nome, dados in estudantes.items():
+                disciplinas_baixa = []
+                for disc in dados.get('disciplinas', []):
+                    freq = disc.get('freq_semestral', 0)
+                    if 0 < freq < 75:
+                        disciplinas_baixa.append({
+                            'disciplina': disc['nome'],
+                            'freq_semestral': freq,
+                            'freq_1bim': disc.get('freq_1bim', 0),
+                            'freq_2bim': disc.get('freq_2bim', 0),
+                            'total_faltas': disc.get('total_faltas', 0)
+                        })
+                if disciplinas_baixa:
+                    alunos_lista.append({
+                        'nome': nome,
+                        'frequencia_media_aluno': dados.get('frequencia_media', 0),
+                        'disciplinas_freq_baixa': disciplinas_baixa,
+                        'total_disciplinas_freq_baixa': len(disciplinas_baixa)
+                    })
+            if alunos_lista:
+                relatorio[serie] = alunos_lista
+        return relatorio
+
+    # ===================== AGREGAÇÕES / RESUMOS =====================
+    def get_series_summary(self):
+        """Resumo consolidado por série: quantidade de alunos, médias e estatísticas de disciplinas.
+        Estrutura:
+        {
+          '1º ano': {
+             'alunos': 261,
+             'frequencia_media_serie': 87.5,
+             'disciplinas': {
+                 'Matemática': {
+                     'media_geral': 6.3,
+                     'media_1bim': 6.1,
+                     'media_2bim': 6.5,
+                     'freq_media': 88.2,
+                     'alunos_media_baixa': 42,
+                     'alunos_media_baixa_pct': 16.1,
+                     'registros': 261
+                 }, ...
+             }
+          }, ...
+        }
+        """
+        if self._cache_series_summary is not None:
+            return self._cache_series_summary
+
+        resumo = {}
+        for serie, alunos_dict in self.students_data.items():
+            alunos = list(alunos_dict.values())
+            if not alunos:
+                continue
+            # Frequência média da série (média das frequências médias dos alunos)
+            freq_media_serie = round(sum(a.get('frequencia_media', 100) for a in alunos)/len(alunos), 2)
+            disciplinas_stats = {}
+            # Acumular por disciplina
+            for aluno in alunos:
+                for disc in aluno.get('disciplinas', []):
+                    nome = disc['nome']
+                    dstat = disciplinas_stats.setdefault(nome, {
+                        'soma_media': 0.0,
+                        'count_media': 0,
+                        'soma_nota_1': 0.0,
+                        'count_nota_1': 0,
+                        'soma_nota_2': 0.0,
+                        'count_nota_2': 0,
+                        'soma_freq_1': 0.0,
+                        'count_freq_1': 0,
+                        'soma_freq_2': 0.0,
+                        'count_freq_2': 0,
+                        'alunos_media_baixa': 0,
+                        'registros': 0
+                    })
+                    media = disc.get('media_semestral', 0)
+                    if media > 0:
+                        dstat['soma_media'] += media
+                        dstat['count_media'] += 1
+                        if media < 5:
+                            dstat['alunos_media_baixa'] += 1
+                    n1 = disc.get('nota_1bim', 0)
+                    if n1 > 0:
+                        dstat['soma_nota_1'] += n1
+                        dstat['count_nota_1'] += 1
+                    n2 = disc.get('nota_2bim', 0)
+                    if n2 > 0:
+                        dstat['soma_nota_2'] += n2
+                        dstat['count_nota_2'] += 1
+                    f1 = disc.get('freq_1bim', 0)
+                    if f1 > 0:
+                        dstat['soma_freq_1'] += f1
+                        dstat['count_freq_1'] += 1
+                    f2 = disc.get('freq_2bim', 0)
+                    if f2 > 0:
+                        dstat['soma_freq_2'] += f2
+                        dstat['count_freq_2'] += 1
+                    dstat['registros'] += 1
+
+            # Finalizar estatísticas
+            disciplinas_formatadas = {}
+            for nome, d in disciplinas_stats.items():
+                media_geral = round(d['soma_media']/d['count_media'], 2) if d['count_media'] else 0
+                media_1 = round(d['soma_nota_1']/d['count_nota_1'], 2) if d['count_nota_1'] else 0
+                media_2 = round(d['soma_nota_2']/d['count_nota_2'], 2) if d['count_nota_2'] else 0
+                freq_media_1 = round(d['soma_freq_1']/d['count_freq_1'], 2) if d['count_freq_1'] else 0
+                freq_media_2 = round(d['soma_freq_2']/d['count_freq_2'], 2) if d['count_freq_2'] else 0
+                # Frequência semestral consolidada (média das médias por bimestre existentes)
+                freqs_validas = [f for f in [freq_media_1, freq_media_2] if f > 0]
+                freq_media = round(sum(freqs_validas)/len(freqs_validas), 2) if freqs_validas else 0
+                baixa_pct = round(d['alunos_media_baixa']/d['count_media']*100, 2) if d['count_media'] else 0
+                disciplinas_formatadas[nome] = {
+                    'media_geral': media_geral,
+                    'media_1bim': media_1,
+                    'media_2bim': media_2,
+                    'freq_media_1bim': freq_media_1,
+                    'freq_media_2bim': freq_media_2,
+                    'freq_media': freq_media,
+                    'alunos_media_baixa': d['alunos_media_baixa'],
+                    'alunos_media_baixa_pct': baixa_pct,
+                    'registros': d['registros']
+                }
+
+            resumo[serie] = {
+                'alunos': len(alunos),
+                'frequencia_media_serie': freq_media_serie,
+                'disciplinas': disciplinas_formatadas
+            }
+
+        self._cache_series_summary = resumo
+        return resumo
+
+    def get_discipline_summary(self, serie=None):
+        """Resumo global ou por série de cada disciplina.
+        Se serie for None: considera todos os alunos.
+        Estrutura: {
+           'Matemática': { ... }, ...
+        }
+        """
+        if serie is None and self._cache_global_discipline_summary is not None:
+            return self._cache_global_discipline_summary
+
+        disciplinas_stats = {}
+        series_alvo = [serie] if serie else list(self.students_data.keys())
+
+        for s in series_alvo:
+            for aluno in self.students_data.get(s, {}).values():
+                for disc in aluno.get('disciplinas', []):
+                    nome = disc['nome']
+                    d = disciplinas_stats.setdefault(nome, {
+                        'soma_media': 0.0, 'count_media': 0,
+                        'soma_nota_1': 0.0, 'count_nota_1': 0,
+                        'soma_nota_2': 0.0, 'count_nota_2': 0,
+                        'soma_freq_1': 0.0, 'count_freq_1': 0,
+                        'soma_freq_2': 0.0, 'count_freq_2': 0,
+                        'alunos_media_baixa': 0,
+                        'registros': 0
+                    })
+                    media = disc.get('media_semestral', 0)
+                    if media > 0:
+                        d['soma_media'] += media
+                        d['count_media'] += 1
+                        if media < 5:
+                            d['alunos_media_baixa'] += 1
+                    n1 = disc.get('nota_1bim', 0)
+                    if n1 > 0:
+                        d['soma_nota_1'] += n1
+                        d['count_nota_1'] += 1
+                    n2 = disc.get('nota_2bim', 0)
+                    if n2 > 0:
+                        d['soma_nota_2'] += n2
+                        d['count_nota_2'] += 1
+                    f1 = disc.get('freq_1bim', 0)
+                    if f1 > 0:
+                        d['soma_freq_1'] += f1
+                        d['count_freq_1'] += 1
+                    f2 = disc.get('freq_2bim', 0)
+                    if f2 > 0:
+                        d['soma_freq_2'] += f2
+                        d['count_freq_2'] += 1
+                    d['registros'] += 1
+
+        resultado = {}
+        for nome, d in disciplinas_stats.items():
+            media_geral = round(d['soma_media']/d['count_media'], 2) if d['count_media'] else 0
+            media_1 = round(d['soma_nota_1']/d['count_nota_1'], 2) if d['count_nota_1'] else 0
+            media_2 = round(d['soma_nota_2']/d['count_nota_2'], 2) if d['count_nota_2'] else 0
+            freq_media_1 = round(d['soma_freq_1']/d['count_freq_1'], 2) if d['count_freq_1'] else 0
+            freq_media_2 = round(d['soma_freq_2']/d['count_freq_2'], 2) if d['count_freq_2'] else 0
+            freqs_validas = [f for f in [freq_media_1, freq_media_2] if f > 0]
+            freq_media = round(sum(freqs_validas)/len(freqs_validas), 2) if freqs_validas else 0
+            baixa_pct = round(d['alunos_media_baixa']/d['count_media']*100, 2) if d['count_media'] else 0
+            resultado[nome] = {
+                'media_geral': media_geral,
+                'media_1bim': media_1,
+                'media_2bim': media_2,
+                'freq_media_1bim': freq_media_1,
+                'freq_media_2bim': freq_media_2,
+                'freq_media': freq_media,
+                'alunos_media_baixa': d['alunos_media_baixa'],
+                'alunos_media_baixa_pct': baixa_pct,
+                'registros': d['registros']
+            }
+
+        if serie is None:
+            self._cache_global_discipline_summary = resultado
+        return resultado

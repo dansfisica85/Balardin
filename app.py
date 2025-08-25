@@ -109,6 +109,33 @@ def relatorio_frequencia_baixa():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
+@app.route('/api/resumo/series')
+def resumo_series():
+    """Resumo consolidado por série (médias e frequências por disciplina)"""
+    try:
+        resumo = pdf_processor.get_series_summary()
+        return jsonify({"status": "success", "data": resumo})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/resumo/disciplinas')
+def resumo_disciplinas_global():
+    """Resumo global de todas as disciplinas (todas as séries)"""
+    try:
+        resumo = pdf_processor.get_discipline_summary()
+        return jsonify({"status": "success", "data": resumo})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/resumo/disciplinas/<serie>')
+def resumo_disciplinas_por_serie(serie):
+    """Resumo de disciplinas filtrado por série"""
+    try:
+        resumo = pdf_processor.get_discipline_summary(serie)
+        return jsonify({"status": "success", "data": resumo})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 @app.route('/api/reprocessar')
 def reprocessar_pdfs():
     """Reprocessa todos os PDFs (útil para atualizações)"""
