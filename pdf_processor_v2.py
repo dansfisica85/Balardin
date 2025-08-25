@@ -613,3 +613,69 @@ class PDFProcessor:
         if serie is None:
             self._cache_global_discipline_summary = resultado
         return resultado
+
+    # ===================== RELATÓRIO COMBINADO =====================
+    def get_combined_issues_report(self):
+        """Combina problemas de nota (<5) e frequência (<75%) por série e aluno.
+        Estrutura:
+        {
+          '1º ano': [
+             {
+               'nome': 'Aluno X',
+               'frequencia_media_aluno': 82.5,
+               'disciplinas_nota_baixa': [...],  # mesmo formato de get_low_grades_report
+               'disciplinas_freq_baixa': [...],  # mesmo formato de get_low_attendance_report
+               'total_disciplinas_nota_baixa': n,
+               'total_disciplinas_freq_baixa': m,
+               'risco_reprovacao': bool,
+               'risco_evasao': bool
+             }, ...
+          ], ...
+        }
+        """
+        notas = self.get_low_grades_report()
+        freq = self.get_low_attendance_report()
+        combinado = {}
+
+        series = set(list(notas.keys()) + list(freq.keys()))
+        for serie in series:
+            alunos_map = {}
+            # Notas
+            for registro in notas.get(serie, []):
+                alunos_map[registro['nome']] = {
+                    'nome': registro['nome'],
+                    'frequencia_media_aluno': 0,
+                    'disciplinas_nota_baixa': registro['disciplinas_problema'],
+                    'disciplinas_freq_baixa': [],
+                    'total_disciplinas_nota_baixa': registro['total_disciplinas_problema'],
+                    'total_disciplinas_freq_baixa': 0,
+                    'risco_reprovacao': True,
+                    'risco_evasao': False
+                }
+            # Frequência
+            for registro in freq.get(serie, []):
+                entry = alunos_map.get(registro['nome'])
+                if not entry:
+                    entry = {
+                        'nome': registro['nome'],
+                        'frequencia_media_aluno': registro.get('frequencia_media_aluno', 0),
+                        'disciplinas_nota_baixa': [],
+                        'disciplinas_freq_baixa': registro.get('disciplinas_freq_baixa', []),
+                        'total_disciplinas_nota_baixa': 0,
+                        'total_disciplinas_freq_baixa': registro.get('total_disciplinas_freq_baixa', 0),
+                        'risco_reprovacao': False,
+                        'risco_evasao': True if registro.get('menor_freq', 100) < 75 or registro.get('frequencia_media_aluno', 100) < 75 else False
+                    }
+                    alunos_map[registro['nome']] = entry
+                else:
+                    entry['frequencia_media_aluno'] = registro.get('frequencia_media_aluno', entry.get('frequencia_media_aluno', 0))
+                    entry['disciplinas_freq_baixa'] = registro.get('disciplinas_freq_baixa', [])
+                    entry['total_disciplinas_freq_baixa'] = registro.get('total_disciplinas_freq_baixa', 0)
+                    if registro.get('menor_freq', 100) < 75 or registro.get('frequencia_media_aluno', 100) < 75:
+                        entry['risco_evasao'] = True
+            # Ajustar risco evasão para itens que vieram só de notas mas possuem frequência baixa calculável em dados originais
+            for nome, entry in alunos_map.items():
+                if not entry['risco_evasao'] and entry['frequencia_media_aluno'] and entry['frequencia_media_aluno'] < 75:
+                    entry['risco_evasao'] = True
+            combinado[serie] = list(alunos_map.values())
+        return combinado

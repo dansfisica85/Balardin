@@ -230,7 +230,7 @@ section h2 {
 
 .notas-info {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
     gap: 10px;
     text-align: center;
 }
@@ -246,6 +246,51 @@ section h2 {
     color: #c62828;
     font-weight: bold;
 }
+
+/* Frequências */
+.freq-item {
+    padding: 8px;
+    border-radius: 5px;
+    background: #eef6ff;
+    font-size: 0.85em;
+}
+.freq-item.freq-baixa {
+    background: #fff8e1;
+    color: #b26a00;
+    font-weight: 600;
+}
+.freq-item.freq-muito-baixa {
+    background: #fdecea;
+    color: #c62828;
+    font-weight: 700;
+    animation: pulseAlert 2s infinite;
+}
+
+.disciplina-problema.freq-baixa { background: #fff8e1; color: #8d5300; }
+.disciplina-problema.freq-muito-baixa { background: #fdecea; color: #c62828; font-weight:600; }
+
+/* Resumo por série */
+.series-resumo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+.serie-resumo-card {
+    background: #ffffff;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    transition: all .3s ease;
+}
+.serie-resumo-card:hover { transform: translateY(-3px); box-shadow:0 4px 12px rgba(0,0,0,.12); }
+.serie-resumo-card h4 { margin-bottom:8px; color:#2c3e50; }
+.serie-resumo-card p { margin:3px 0; font-size:.85em; }
+
+/* Riscos combinados */
+.estudante-item.risco-reprovacao { border-left:5px solid #e74c3c; }
+.estudante-item.risco-evasao { box-shadow:0 0 0 2px rgba(230,126,34,.3); }
 
 /* Relatórios */
 .report-content {

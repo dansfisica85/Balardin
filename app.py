@@ -136,6 +136,25 @@ def resumo_disciplinas_por_serie(serie):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
+@app.route('/api/relatorio/combinais')
+def relatorio_combinado():
+    """Relatório combinado de notas e frequência"""
+    try:
+        relatorio = pdf_processor.get_combined_issues_report()
+        return jsonify({"status": "success", "data": relatorio})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/resumo/series/simples')
+def resumo_series_simples():
+    """Resumo simples por série (quantidade de alunos e frequência média)."""
+    try:
+        full = pdf_processor.get_series_summary()
+        simples = {s: { 'alunos': d['alunos'], 'frequencia_media_serie': d['frequencia_media_serie'] } for s,d in full.items()}
+        return jsonify({"status": "success", "data": simples})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 @app.route('/api/reprocessar')
 def reprocessar_pdfs():
     """Reprocessa todos os PDFs (útil para atualizações)"""

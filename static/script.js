@@ -9,17 +9,20 @@ class SistemaAnalise {
         this.dadosAluno = document.getElementById('dadosAluno');
         this.relatorioNotas = document.getElementById('relatorioNotas');
         this.relatorioFrequencia = document.getElementById('relatorioFrequencia');
+    this.relatorioCombinado = document.getElementById('relatorioCombinado');
         this.resultadoRelatorios = document.getElementById('resultadoRelatorios');
         this.conteudoRelatorio = document.getElementById('conteudoRelatorio');
         this.tituloRelatorio = document.getElementById('tituloRelatorio');
         this.reprocessarBtn = document.getElementById('reprocessar');
         this.loading = document.getElementById('loading');
+    this.seriesResumoContainer = document.getElementById('seriesResumo');
         
         this.init();
     }
     
     init() {
         this.loadSeries();
+    this.loadSeriesResumo();
         this.setupEventListeners();
     }
     
@@ -57,6 +60,9 @@ class SistemaAnalise {
         
         this.relatorioFrequencia.addEventListener('click', () => {
             this.loadRelatorioFrequenciaBaixa();
+        });
+        this.relatorioCombinado.addEventListener('click', () => {
+            this.loadRelatorioCombinado();
         });
         
         // Reprocessar PDFs
@@ -106,6 +112,24 @@ class SistemaAnalise {
             });
         } catch (error) {
             console.error('Erro ao carregar séries:', error);
+        }
+    }
+
+    async loadSeriesResumo() {
+        try {
+            const resumo = await this.apiCall('/api/resumo/series/simples');
+            let html = '';
+            Object.entries(resumo).forEach(([serie, dados]) => {
+                html += `
+                  <div class="serie-resumo-card fade-in">
+                    <h4>${serie}</h4>
+                    <p><strong>Alunos:</strong> ${dados.alunos}</p>
+                    <p><strong>Freq. Média:</strong> ${dados.frequencia_media_serie}%</p>
+                  </div>`;
+            });
+            this.seriesResumoContainer.innerHTML = html;
+        } catch (e) {
+            console.error('Erro ao carregar resumo séries', e);
         }
     }
     
@@ -166,13 +190,17 @@ class SistemaAnalise {
         }
         
         // Disciplinas
-        html += '<h4><i class="fas fa-book"></i> Disciplinas e Notas</h4>';
+        html += '<h4><i class="fas fa-book"></i> Disciplinas, Notas e Frequências</h4>';
         html += '<div class="disciplinas-grid">';
         
         aluno.disciplinas.forEach(disciplina => {
             const isProblema = disciplina.media_semestral < 5;
+            const freqSem = disciplina.freq_semestral ?? 0;
+            const freq1 = disciplina.freq_1bim ?? 0;
+            const freq2 = disciplina.freq_2bim ?? 0;
+            const freqClasse = (freqSem > 0 && freqSem < 60) ? 'freq-muito-baixa' : ((freqSem > 0 && freqSem < 75) ? 'freq-baixa' : '');
             html += `
-                <div class="disciplina-card ${isProblema ? 'problema' : ''}">
+                <div class="disciplina-card ${isProblema ? 'problema' : ''} ${freqClasse}">
                     <h4>${disciplina.nome}</h4>
                     <div class="notas-info">
                         <div class="nota-item">
@@ -187,6 +215,19 @@ class SistemaAnalise {
                             <strong>Média</strong><br>
                             ${disciplina.media_semestral}
                             ${isProblema ? ' <i class="fas fa-exclamation-triangle"></i>' : ''}
+                        </div>
+                        <div class="freq-item">
+                            <strong>Freq 1ºB</strong><br>
+                            ${freq1 || '-'}%
+                        </div>
+                        <div class="freq-item">
+                            <strong>Freq 2ºB</strong><br>
+                            ${freq2 || '-'}%
+                        </div>
+                        <div class="freq-item ${freqClasse}">
+                            <strong>Freq Sem</strong><br>
+                            ${freqSem || '-'}%
+                            ${(freqSem > 0 && freqSem < 75) ? ' <i class="fas fa-exclamation-circle"></i>' : ''}
                         </div>
                     </div>
                 </div>
@@ -217,9 +258,18 @@ class SistemaAnalise {
             console.error('Erro ao carregar relatório de frequência baixa:', error);
         }
     }
+
+    async loadRelatorioCombinado() {
+        try {
+            const relatorio = await this.apiCall('/api/relatorio/combinais');
+            this.displayRelatorio('Relatório Combinado (Notas & Frequência)', relatorio, 'combinado');
+        } catch (error) {
+            console.error('Erro ao carregar relatório combinado:', error);
+        }
+    }
     
     displayRelatorio(titulo, dados, tipo) {
-        this.tituloRelatorio.innerHTML = `<i class="fas fa-file-alt"></i> ${titulo}`;
+    this.tituloRelatorio.innerHTML = `<i class="fas fa-file-alt"></i> ${titulo}`;
         
         if (Object.keys(dados).length === 0) {
             this.conteudoRelatorio.innerHTML = `
@@ -260,21 +310,50 @@ class SistemaAnalise {
                         });
                         
                         html += '</div></div>';
-                    } else {
+                    } else if (tipo === 'frequencia') {
+                        // Novo formato: frequencia baixa inclui disciplinas_freq_baixa
                         const riscoClasse = estudante.risco_nivel === 'ALTO' ? 'risco-alto' : 'risco-medio';
                         html += `
                             <div class="estudante-item ${riscoClasse}">
                                 <div class="estudante-nome">
                                     <i class="fas fa-user"></i> ${estudante.nome}
                                 </div>
-                                <p><strong>Frequência:</strong> ${estudante.frequencia}%</p>
+                                <p><strong>Frequência Média do Aluno:</strong> ${estudante.frequencia_media_aluno}%</p>
                                 <p><strong>Nível de Risco:</strong> 
                                     <span style="color: ${estudante.risco_nivel === 'ALTO' ? '#dc3545' : '#ffc107'};">
                                         ${estudante.risco_nivel}
                                     </span>
                                 </p>
-                            </div>
+                                <p><strong>Disciplinas com frequência < 75%:</strong> ${estudante.total_disciplinas_freq_baixa}</p>
+                                <div class="disciplinas-problema">
                         `;
+                        estudante.disciplinas_freq_baixa.forEach(d => {
+                            const freqClasseDisc = (d.freq_semestral < 60) ? 'freq-muito-baixa' : 'freq-baixa';
+                            html += `
+                                <div class="disciplina-problema ${freqClasseDisc}">
+                                    <strong>${d.disciplina}:</strong> Sem ${d.freq_semestral}% (1ºB ${d.freq_1bim || '-'}%, 2ºB ${d.freq_2bim || '-'}%)
+                                </div>
+                            `;
+                        });
+                        html += '</div></div>';
+                    } else if (tipo === 'combinado') {
+                        const riscoReprov = estudante.total_disciplinas_nota_baixa > 0;
+                        const riscoEvasao = estudante.total_disciplinas_freq_baixa > 0 || estudante.frequencia_media_aluno < 75;
+                        const classes = [
+                            riscoReprov ? 'risco-reprovacao' : '',
+                            riscoEvasao ? 'risco-evasao' : ''
+                        ].join(' ');
+                        html += `
+                            <div class="estudante-item ${classes}">
+                                <div class="estudante-nome"><i class="fas fa-user"></i> ${estudante.nome}</div>
+                                <p><strong>Freq. Média:</strong> ${estudante.frequencia_media_aluno || '-'}%</p>
+                                <p><strong>Disciplinas Nota <5:</strong> ${estudante.total_disciplinas_nota_baixa}</p>
+                                <p><strong>Disciplinas Freq <75%:</strong> ${estudante.total_disciplinas_freq_baixa}</p>
+                                <div class="disciplinas-problema">
+                                    ${estudante.disciplinas_nota_baixa.map(d=>`<div class='disciplina-problema'>📘 ${d.disciplina}: média ${d.media}</div>`).join('')}
+                                    ${estudante.disciplinas_freq_baixa.map(d=>`<div class='disciplina-problema ${d.freq_semestral<60?'freq-muito-baixa':'freq-baixa'}'>🕒 ${d.disciplina}: ${d.freq_semestral}%</div>`).join('')}
+                                </div>
+                            </div>`;
                     }
                 });
                 
