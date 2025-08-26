@@ -96,6 +96,13 @@ class SistemaAnalise {
         this.showLoading();
         try {
             const response = await fetch(url);
+            
+            // Verificar se a resposta é HTML (erro comum no Netlify)
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                throw new Error('Servidor retornou HTML em vez de JSON. Verifique a configuração do Netlify.');
+            }
+            
             const data = await response.json();
             
             if (data.status === 'error') {
@@ -105,6 +112,13 @@ class SistemaAnalise {
             return data.data;
         } catch (error) {
             console.error('Erro na API:', error);
+            
+            // Fallback para dados hardcoded se a API falhar
+            if (url.includes('/api/turmas')) {
+                console.log('Usando fallback para turmas');
+                return ["1A", "1B", "1C", "1D", "1E", "2A", "2B", "2C", "2D", "2E", "2F", "3A", "3B", "3C", "3D", "3E", "3F", "3G", "6A", "6B", "7A", "7B", "7C", "8A", "8B", "8C", "9A", "9B"];
+            }
+            
             alert('Erro: ' + error.message);
             throw error;
         } finally {

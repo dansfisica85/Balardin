@@ -7,9 +7,34 @@
   PYTHON_VERSION = "3.9"
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/app/:splat"
+  from = "/api/turmas"
+  to = "/.netlify/functions/app"
   status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/turma/*"
+  to = "/.netlify/functions/app"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/series"
+  to = "/.netlify/functions/app"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/alunos/*"
+  to = "/.netlify/functions/app"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/aluno/*/*"
+  to = "/.netlify/functions/app"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/*"
