@@ -14,122 +14,64 @@ except ImportError as e:
 
 def handler(event, context):
     """Handler para Netlify Functions"""
-    # Log de debug
-    print(f"Event: {json.dumps(event, indent=2)}")
-    print(f"Context: {context}")
-    
+    print("[handler] Event path:", event.get('path'))
     try:
-        # Extrair path da requisição
-        path = event.get('path', '/')
-        query_params = event.get('queryStringParameters') or {}
-        
-        print(f"Original path: {path}")
-        print(f"Query params: {query_params}")
-        
-        # Se veio do redirect, pegar o path do parâmetro
-        if 'path' in query_params:
-            path = '/' + query_params['path']
-            print(f"Adjusted path: {path}")
-        
-        # Inicializar processador
-        pdf_processor = PDFProcessor()
-        
-        # Tentar carregar dados pré-compilados
-        data_path = os.path.join(project_root, 'data', 'alunos_compilado.json')
-        if os.path.exists(data_path):
-            with open(data_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                pdf_processor.load_data(data)
+        raw_path = event.get('path', '/')
+        prefix = '/.netlify/functions/app'
+        if raw_path.startswith(prefix):
+            path = raw_path[len(prefix):] or '/'
         else:
-            # Processar PDFs diretamente (não recomendado no Netlify)
-            return {
-                'statusCode': 500,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps({"status": "error", "message": "Dados não compilados encontrados"})
-            }
-        
-        # Headers CORS
-        headers = {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type'
-        }
-        
-        # Roteamento simples
-        if path == '/api/turmas' or path == '/turmas':
+            path = raw_path
+        print('[handler] Normalized path:', path)
+
+        # Instanciar processor e carregar dados
+        pdf_processor = PDFProcessor()
+        data_path = os.path.join(project_root, 'data', 'alunos_compilado.json')
+        if not os.path.exists(data_path):
+            return _resp(500, {"status":"error","message":"JSON compilado ausente"})
+        with open(data_path, 'r', encoding='utf-8') as f:
+            pdf_processor.load_data(json.load(f))
+
+        # Roteamento
+        if path in ('/api/turmas','/turmas'):
             codigos = set()
-            for serie_dict in pdf_processor.students_data.values():
-                for aluno in serie_dict.values():
-                    arq = aluno.get('arquivo_origem')
-                    if arq and arq.lower().endswith('.pdf'):
-                        codigos.add(arq[:-4])
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': json.dumps({"status": "success", "data": sorted(codigos)})
-            }
-        
-        elif path.startswith('/api/turma/') or path.startswith('/turma/'):
+            for serie in pdf_processor.students_data.values():
+                for aluno in serie.values():
+                    arq = aluno.get('arquivo_origem','')
+                    if arq.lower().endswith('.pdf'):
+                        base = os.path.splitext(arq)[0].strip().replace('\r','').replace('\n','')
+                        codigos.add(base)
+            codigos = sorted(codigos)
+            return _resp(200, {"status":"success","data":codigos})
+        if path.startswith('/api/turma/') or path.startswith('/turma/'):
             codigo = path.split('/')[-1]
             alunos = pdf_processor.get_students_by_file(codigo)
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': json.dumps({"status": "success", "data": alunos})
-            }
-        
-        elif path == '/api/series' or path == '/series':
-            series = list(pdf_processor.students_data.keys())
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': json.dumps({"status": "success", "data": sorted(series)})
-            }
-        
-        elif path.startswith('/api/alunos/') or path.startswith('/alunos/'):
+            return _resp(200, {"status":"success","data":alunos})
+        if path in ('/api/series','/series'):
+            return _resp(200, {"status":"success","data":sorted(pdf_processor.students_data.keys())})
+        if path.startswith('/api/alunos/') or path.startswith('/alunos/'):
             serie = path.split('/')[-1]
             alunos = pdf_processor.get_students_by_serie(serie)
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': json.dumps({"status": "success", "data": sorted(alunos)})
-            }
-        
-        elif path.startswith('/api/aluno/'):
+            return _resp(200, {"status":"success","data":sorted(alunos)})
+        if path.startswith('/api/aluno/'):
             parts = path.split('/')
             if len(parts) >= 4:
                 serie = parts[-2]
                 nome = parts[-1]
                 dados = pdf_processor.get_student_data(serie, nome)
                 if dados:
-                    return {
-                        'statusCode': 200,
-                        'headers': headers,
-                        'body': json.dumps({"status": "success", "data": {"aluno": dados, "alertas": [], "risco_reprovacao": False, "risco_evasao": False}})
-                    }
-            return {
-                'statusCode': 404,
-                'headers': headers,
-                'body': json.dumps({"status": "error", "message": "Aluno não encontrado"})
-            }
-        
-        else:
-            return {
-                'statusCode': 404,
-                'headers': headers,
-                'body': json.dumps({"status": "error", "message": f"Endpoint não encontrado: {path}"})
-            }
-            
+                    return _resp(200, {"status":"success","data":{"aluno":dados}})
+            return _resp(404, {"status":"error","message":"Aluno não encontrado"})
+        return _resp(404, {"status":"error","message":f"Endpoint não encontrado: {path}"})
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({"status": "error", "message": str(e)})
-        }
+        return _resp(500, {"status":"error","message":str(e)})
+
+def _resp(status, payload):
+    return {
+        'statusCode': status,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        },
+        'body': json.dumps(payload, ensure_ascii=False)
+    }
