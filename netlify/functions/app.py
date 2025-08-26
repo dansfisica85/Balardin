@@ -14,7 +14,7 @@ except ImportError as e:
 
 def handler(event, context):
     """Handler para Netlify Functions"""
-    print("[handler] Event path:", event.get('path'))
+    print("[handler] Event path:", event.get('path'), "method:", event.get('httpMethod'))
     try:
         raw_path = event.get('path', '/')
         prefix = '/.netlify/functions/app'
@@ -23,6 +23,18 @@ def handler(event, context):
         else:
             path = raw_path
         print('[handler] Normalized path:', path)
+
+        method = event.get('httpMethod', 'GET')
+        if method == 'OPTIONS':
+            return {
+                'statusCode': 204,
+                'headers': {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type'
+                },
+                'body': ''
+            }
 
         # Instanciar processor e carregar dados
         pdf_processor = PDFProcessor()
@@ -33,6 +45,8 @@ def handler(event, context):
             pdf_processor.load_data(json.load(f))
 
         # Roteamento
+        if path in ('/api/ping','/ping'):
+            return _resp(200, {"status":"ok","message":"pong","available_endpoints":["/api/turmas","/api/turma/<codigo>","/api/series","/api/alunos/<serie>","/api/aluno/<serie>/<nome>"]})
         if path in ('/api/turmas','/turmas'):
             codigos = set()
             for serie in pdf_processor.students_data.values():
