@@ -92,18 +92,10 @@ def listar_turmas():
 
 @app.route('/api/turma/<codigo>')
 def dados_turma(codigo):
-    """Retorna alunos e estatísticas simples de uma turma (arquivo)."""
+    """Retorna alunos completos de uma turma (arquivo)."""
     try:
         alunos = pdf_processor.get_students_by_file(codigo)
-        simples = []
-        for a in alunos:
-            simples.append({
-                'nome': a.get('nome'),
-                'serie': a.get('serie'),
-                'frequencia_media': a.get('frequencia_media'),
-                'disciplinas': len(a.get('disciplinas', []))
-            })
-        return jsonify({"status": "success", "data": simples})
+        return jsonify({"status": "success", "data": alunos})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 

@@ -174,39 +174,71 @@ class SistemaAnalise {
                 const freqMed = (alunos.reduce((acc,a)=>acc+parseFloat(a.frequencia_media||0),0)/total).toFixed(1);
                 html += `<p><strong>Total de alunos:</strong> ${total}</p>`;
                 html += `<p><strong>Frequência média da turma:</strong> ${freqMed}%</p>`;
+                
                 // Estatísticas por disciplina
                 const stats = {};
                 alunos.forEach(a=>{
                     (a.disciplinas||[]).forEach(d=>{
                         if (!stats[d.nome]) stats[d.nome]={notas:[],freqs:[]};
-                        if (d.media_semestral) stats[d.nome].notas.push(d.media_semestral);
-                        if (d.freq_semestral) stats[d.nome].freqs.push(d.freq_semestral);
+                        if (d.media_semestral > 0) stats[d.nome].notas.push(d.media_semestral);
+                        if (d.freq_semestral > 0) stats[d.nome].freqs.push(d.freq_semestral);
                     });
                 });
+                
                 if (Object.keys(stats).length>0){
-                    html += `<h4>Disciplinas</h4><table class="table table-sm"><thead><tr><th>Disciplina</th><th>Média</th><th>Freq. Média</th><th>Alunos <5</th><th>Alunos <75%</th></tr></thead><tbody>`;
+                    html += `<h4>Disciplinas</h4>`;
+                    html += `<table class="table table-striped" style="font-size:0.9em;">`;
+                    html += `<thead><tr><th>Disciplina</th><th>Média</th><th>Freq. Média</th><th>Alunos <5.0</th><th>Alunos <75%</th></tr></thead><tbody>`;
                     Object.entries(stats).forEach(([nome,vals])=>{
                         const medias = vals.notas;
                         const freqs = vals.freqs;
-                        const med = medias.length ? (medias.reduce((a,b)=>a+b,0)/medias.length).toFixed(2) : '-';
-                        const freq = freqs.length ? (freqs.reduce((a,b)=>a+b,0)/freqs.length).toFixed(2) : '-';
+                        const med = medias.length ? (medias.reduce((a,b)=>a+b,0)/medias.length).toFixed(1) : '-';
+                        const freq = freqs.length ? (freqs.reduce((a,b)=>a+b,0)/freqs.length).toFixed(1) : '-';
                         const abaixo5 = medias.filter(n=>n<5).length;
                         const abaixo75 = freqs.filter(f=>f<75).length;
                         html += `<tr><td>${nome}</td><td>${med}</td><td>${freq}%</td><td>${abaixo5}</td><td>${abaixo75}</td></tr>`;
                     });
                     html += '</tbody></table>';
                 }
-                // Lista de alunos
-                html += '<h4>Alunos</h4><ul class="lista-turma">';
+                
+                // Lista de alunos com problemas
+                const alunosProblema = alunos.filter(a => {
+                    const temNotaBaixa = a.disciplinas.some(d => d.media_semestral > 0 && d.media_semestral < 5);
+                    const temFreqBaixa = a.frequencia_media < 75 || a.disciplinas.some(d => d.freq_semestral > 0 && d.freq_semestral < 75);
+                    return temNotaBaixa || temFreqBaixa;
+                });
+                
+                if (alunosProblema.length > 0) {
+                    html += `<h4>Alunos com Problemas (${alunosProblema.length})</h4>`;
+                    html += '<div class="problemas-lista">';
+                    alunosProblema.forEach(a => {
+                        const problemas = [];
+                        if (a.frequencia_media < 75) problemas.push(`Freq geral: ${a.frequencia_media}%`);
+                        a.disciplinas.forEach(d => {
+                            if (d.media_semestral > 0 && d.media_semestral < 5) 
+                                problemas.push(`${d.nome}: nota ${d.media_semestral}`);
+                            if (d.freq_semestral > 0 && d.freq_semestral < 75) 
+                                problemas.push(`${d.nome}: freq ${d.freq_semestral}%`);
+                        });
+                        html += `<div class="aluno-problema"><strong>${a.nome}</strong>: ${problemas.join(', ')}</div>`;
+                    });
+                    html += '</div>';
+                }
+                
+                // Lista completa de alunos
+                html += `<h4>Todos os Alunos (${total})</h4>`;
+                html += '<ul class="lista-turma">';
                 alunos.forEach(a=>{
-                    html += `<li>${a.nome} - ${a.serie} - Freq: ${a.frequencia_media}% - Disciplinas: ${a.disciplinas.length}</li>`;
+                    html += `<li>${a.nome} - ${a.serie} - Freq: ${a.frequencia_media}% - ${a.disciplinas.length} disciplinas</li>`;
                 });
                 html += '</ul>';
             }
             this.dadosAluno.innerHTML = html;
             this.resultadoAluno.style.display = 'block';
+            this.resultadoAluno.scrollIntoView({ behavior: 'smooth' });
         } catch (e) {
             console.error('Erro ao carregar turma', e);
+            alert('Erro ao carregar dados da turma: ' + e.message);
         }
     }
 
