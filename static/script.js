@@ -4,6 +4,7 @@ class SistemaAnalise {
     constructor() {
         this.serieSelect = document.getElementById('serieSelect');
         this.alunoSelect = document.getElementById('alunoSelect');
+    this.arquivoSelect = document.getElementById('arquivoSelect');
         this.buscarBtn = document.getElementById('buscarAluno');
         this.resultadoAluno = document.getElementById('resultadoAluno');
         this.dadosAluno = document.getElementById('dadosAluno');
@@ -22,6 +23,7 @@ class SistemaAnalise {
     
     init() {
         this.loadSeries();
+    this.loadArquivos();
     this.loadSeriesResumo();
         this.setupEventListeners();
     }
@@ -36,6 +38,16 @@ class SistemaAnalise {
                 this.alunoSelect.innerHTML = '<option value="">Primeiro selecione uma série...</option>';
                 this.alunoSelect.disabled = true;
                 this.buscarBtn.disabled = true;
+            }
+        });
+
+        // Mudança de arquivo (turma)
+        this.arquivoSelect.addEventListener('change', ()=>{
+            const codigo = this.arquivoSelect.value;
+            if (codigo) {
+                this.loadTurma(codigo);
+            } else {
+                this.resultadoAluno.style.display = 'none';
             }
         });
         
@@ -112,6 +124,42 @@ class SistemaAnalise {
             });
         } catch (error) {
             console.error('Erro ao carregar séries:', error);
+        }
+    }
+
+    async loadArquivos() {
+        try {
+            const arquivos = await this.apiCall('/api/turmas');
+            this.arquivoSelect.innerHTML = '<option value="">Selecione...</option>';
+            arquivos.forEach(arq=>{
+                const opt = document.createElement('option');
+                opt.value = arq;
+                opt.textContent = arq;
+                this.arquivoSelect.appendChild(opt);
+            });
+        } catch (e) {
+            console.error('Erro ao carregar turmas/arquivos', e);
+        }
+    }
+
+    async loadTurma(codigo){
+        try {
+            const alunos = await this.apiCall(`/api/turma/${encodeURIComponent(codigo)}`);
+            // Exibir resumo simples da turma
+            let html = `<h3>Turma ${codigo}</h3>`;
+            if (alunos.length===0){
+                html += '<p>Nenhum aluno encontrado.</p>';
+            } else {
+                html += '<ul class="lista-turma">';
+                alunos.forEach(a=>{
+                    html += `<li>${a.nome} - ${a.serie} - Freq: ${a.frequencia_media}% - Disciplinas: ${a.disciplinas}</li>`;
+                });
+                html += '</ul>';
+            }
+            this.dadosAluno.innerHTML = html;
+            this.resultadoAluno.style.display = 'block';
+        } catch (e) {
+            console.error('Erro ao carregar turma', e);
         }
     }
 

@@ -323,6 +323,18 @@ class PDFProcessor:
     def get_student_data(self, serie, nome_aluno):
         """Retorna dados de um estudante específico"""
         return self.students_data.get(serie, {}).get(nome_aluno)
+
+    def get_students_by_file(self, file_code):
+        """Retorna lista de alunos cujo arquivo_origem corresponde ao código (ex: '1A').
+        file_code: string sem extensão. Compara com arquivo_origem (filename) ignorando .pdf case.
+        """
+        alvo = f"{file_code.upper()}.PDF"
+        resultado = []
+        for serie_dict in self.students_data.values():
+            for aluno in serie_dict.values():
+                if aluno.get('arquivo_origem', '').upper() == alvo:
+                    resultado.append(aluno)
+        return resultado
     
     def get_low_grades_report(self):
         """Gera relatório de estudantes com notas abaixo de 5"""

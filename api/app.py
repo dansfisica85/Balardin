@@ -75,6 +75,38 @@ def get_dados_aluno(serie, nome_aluno):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
+@app.route('/api/turmas')
+def listar_turmas():
+    """Lista códigos de turmas/arquivos disponíveis (derivado dos PDFs processados)."""
+    try:
+        # Extrair códigos únicos de arquivo_origem sem extensão
+        codigos = set()
+        for serie_dict in pdf_processor.students_data.values():
+            for aluno in serie_dict.values():
+                arq = aluno.get('arquivo_origem')
+                if arq and arq.lower().endswith('.pdf'):
+                    codigos.add(arq[:-4])
+        return jsonify({"status": "success", "data": sorted(codigos)})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/turma/<codigo>')
+def dados_turma(codigo):
+    """Retorna alunos e estatísticas simples de uma turma (arquivo)."""
+    try:
+        alunos = pdf_processor.get_students_by_file(codigo)
+        simples = []
+        for a in alunos:
+            simples.append({
+                'nome': a.get('nome'),
+                'serie': a.get('serie'),
+                'frequencia_media': a.get('frequencia_media'),
+                'disciplinas': len(a.get('disciplinas', []))
+            })
+        return jsonify({"status": "success", "data": simples})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 @app.route('/api/relatorio/notas-baixas')
 def relatorio_notas_baixas():
     try:
