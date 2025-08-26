@@ -5,6 +5,7 @@ class SistemaAnalise {
         this.serieSelect = document.getElementById('serieSelect');
         this.alunoSelect = document.getElementById('alunoSelect');
     this.arquivoSelect = document.getElementById('arquivoSelect');
+    this.serieRelatorio = document.getElementById('serieRelatorio');
         this.buscarBtn = document.getElementById('buscarAluno');
         this.resultadoAluno = document.getElementById('resultadoAluno');
         this.dadosAluno = document.getElementById('dadosAluno');
@@ -131,12 +132,31 @@ class SistemaAnalise {
         try {
             const arquivos = await this.apiCall('/api/turmas');
             this.arquivoSelect.innerHTML = '<option value="">Selecione...</option>';
+            if (this.serieRelatorio) this.serieRelatorio.innerHTML = '<option value="">Selecione...</option>';
             arquivos.forEach(arq=>{
                 const opt = document.createElement('option');
                 opt.value = arq;
                 opt.textContent = arq;
                 this.arquivoSelect.appendChild(opt);
+                if (this.serieRelatorio){
+                    const opt2 = document.createElement('option');
+                    opt2.value = arq;
+                    opt2.textContent = arq;
+                    this.serieRelatorio.appendChild(opt2);
+                }
             });
+            // Listener para select de relatório rápido
+            if (this.serieRelatorio && !this._serieRelatorioBound){
+                this._serieRelatorioBound = true;
+                this.serieRelatorio.addEventListener('change', ()=>{
+                    const cod = this.serieRelatorio.value;
+                    if (cod){
+                        this.loadTurma(cod);
+                    } else {
+                        this.resultadoAluno.style.display='none';
+                    }
+                });
+            }
         } catch (e) {
             console.error('Erro ao carregar turmas/arquivos', e);
         }
