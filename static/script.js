@@ -165,14 +165,41 @@ class SistemaAnalise {
     async loadTurma(codigo){
         try {
             const alunos = await this.apiCall(`/api/turma/${encodeURIComponent(codigo)}`);
-            // Exibir resumo simples da turma
-            let html = `<h3>Turma ${codigo}</h3>`;
-            if (alunos.length===0){
+            let html = `<h3>Relatório da Turma ${codigo}</h3>`;
+            if (alunos.length === 0) {
                 html += '<p>Nenhum aluno encontrado.</p>';
             } else {
-                html += '<ul class="lista-turma">';
+                // Estatísticas agregadas
+                const total = alunos.length;
+                const freqMed = (alunos.reduce((acc,a)=>acc+parseFloat(a.frequencia_media||0),0)/total).toFixed(1);
+                html += `<p><strong>Total de alunos:</strong> ${total}</p>`;
+                html += `<p><strong>Frequência média da turma:</strong> ${freqMed}%</p>`;
+                // Estatísticas por disciplina
+                const stats = {};
                 alunos.forEach(a=>{
-                    html += `<li>${a.nome} - ${a.serie} - Freq: ${a.frequencia_media}% - Disciplinas: ${a.disciplinas}</li>`;
+                    (a.disciplinas||[]).forEach(d=>{
+                        if (!stats[d.nome]) stats[d.nome]={notas:[],freqs:[]};
+                        if (d.media_semestral) stats[d.nome].notas.push(d.media_semestral);
+                        if (d.freq_semestral) stats[d.nome].freqs.push(d.freq_semestral);
+                    });
+                });
+                if (Object.keys(stats).length>0){
+                    html += `<h4>Disciplinas</h4><table class="table table-sm"><thead><tr><th>Disciplina</th><th>Média</th><th>Freq. Média</th><th>Alunos <5</th><th>Alunos <75%</th></tr></thead><tbody>`;
+                    Object.entries(stats).forEach(([nome,vals])=>{
+                        const medias = vals.notas;
+                        const freqs = vals.freqs;
+                        const med = medias.length ? (medias.reduce((a,b)=>a+b,0)/medias.length).toFixed(2) : '-';
+                        const freq = freqs.length ? (freqs.reduce((a,b)=>a+b,0)/freqs.length).toFixed(2) : '-';
+                        const abaixo5 = medias.filter(n=>n<5).length;
+                        const abaixo75 = freqs.filter(f=>f<75).length;
+                        html += `<tr><td>${nome}</td><td>${med}</td><td>${freq}%</td><td>${abaixo5}</td><td>${abaixo75}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                }
+                // Lista de alunos
+                html += '<h4>Alunos</h4><ul class="lista-turma">';
+                alunos.forEach(a=>{
+                    html += `<li>${a.nome} - ${a.serie} - Freq: ${a.frequencia_media}% - Disciplinas: ${a.disciplinas.length}</li>`;
                 });
                 html += '</ul>';
             }
