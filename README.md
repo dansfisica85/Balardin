@@ -1,8 +1,12 @@
-# Sistema de Análise de Desempenho Acadêmico
+# 🎓 LIVIA - Sistema de Análise de Desempenho Acadêmico
 
-Sistema web para análise de dados educacionais extraídos de arquivos PDF, com funcionalidades de busca por aluno, monitoramento de notas e frequência, e geração de relatórios de risco.
+Sistema web para análise de dados acadêmicos da E.E. Anna Passamonti Balardin.
 
-## Funcionalidades
+## 🚀 Acesso GitHub Pages
+
+O sistema está disponível em: **[https://dansfisica85.github.io/Balardin/](https://dansfisica85.github.io/Balardin/)**
+
+## 📊 Funcionalidades
 
 ### 🔍 Busca Individual
 - Seleção por série/ano
