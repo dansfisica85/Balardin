@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎓LIVIA🌼 | Levantamento de Informações Vinculadas à Infrequência e Avaliação - E.E. Anna Passamonti Balardin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓LIVIA🌼</h1>
+            <p class="subtitle-line">📇Levantamento de 📊Informações 🔗Vinculadas à 📉Infrequência e 📝Avaliação</p>
+            <p class="subtitle-school">E.E. Anna Passamonti Balardin</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Seção de Busca Individual -->
+            <section class="search-section section-border">
+                <h2><i class="fas fa-search"></i> Busca Individual de Aluno</h2>
+                <p class="section-description">🔍 <strong>Esta seção permite localizar um aluno específico e ver todas suas notas e frequência.</strong></p>
+                
+                <div class="search-form">
+                    <div class="form-group">
+                        <label for="arquivoSelect">📁 Turma (Arquivo PDF):</label>
+                        <p class="field-description">Seleciona o arquivo PDF da turma (ex: 1A.pdf, 2B.pdf) - <em>Mostra as turmas disponíveis</em></p>
+                        <select id="arquivoSelect" class="form-control">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="serieSelect">🎓 Série/Ano:</label>
+                        <p class="field-description">Filtra por série/ano escolar após selecionar a turma - <em>Organiza alunos por nível</em></p>
+                        <select id="serieSelect" class="form-control">
+                            <option value="">Selecione uma série...</option>
+                        </select>
+                    </div>
+                                        
+                    <div class="form-group">
+                        <label for="alunoSelect">👤 Aluno:</label>
+                        <p class="field-description">Lista todos os alunos da série selecionada - <em>Escolha o estudante para ver dados detalhados</em></p>
+                        <select id="alunoSelect" class="form-control" disabled>
+                            <option value="">Primeiro selecione uma série...</option>
+                        </select>
+                    </div>
+                                        
+                    <button id="buscarAluno" class="btn btn-primary" disabled>
+                        <i class="fas fa-search"></i> Buscar Dados do Aluno
+                    </button>
+                    <p class="button-description">📊 <strong>RESULTADO:</strong> Exibe notas completas, médias, frequência e alertas de risco do aluno selecionado</p>
+                </div>
+            </section>
+            
+            <!-- Seção de Resultados do Aluno -->
+            <section id="resultadoAluno" class="result-section section-border" style="display: none;">
+                <h2><i class="fas fa-user-graduate"></i> Dados do Aluno</h2>
+                <p class="section-description">📋 <strong>Esta área mostra informações completas do aluno:</strong> notas por disciplina, médias, frequência e alertas automáticos de risco</p>
+                <div id="dadosAluno" class="student-data"></div>
+            </section>
+
+            <!-- Seção de Relatórios -->
+            <section class="reports-section section-border">
+                <h2><i class="fas fa-chart-bar"></i> Relatórios Gerais</h2>
+                <p class="section-description">📊 <strong>Esta seção gera relatórios completos de toda a escola ou turma específica.</strong></p>
+                
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label for="serieRelatorio">🎯 Turma (Filtro para Relatórios):</label>
+                    <p class="field-description">Seleciona uma turma específica para relatórios focados - <em>Deixe vazio para relatório geral de toda escola</em></p>
+                    <select id="serieRelatorio" class="form-control" style="max-width:300px; margin-top:8px;">
+                        <option value="">📋 Selecione (vazio = todas as turmas)...</option>
+                        <!-- Opções serão preenchidas dinamicamente -->
+                    </select>
+                </div>
+                
+                <div class="reports-buttons">
+                    <button id="relatorioNotas" class="btn btn-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Relatório de Notas Baixas (< 5.0)
+                    </button>
+                    <p class="button-description">⚠️ <strong>RESULTADO:</strong> Lista todos os alunos com médias abaixo de 5.0 (risco de reprovação)</p>
+                                        
+                    <button id="relatorioFrequencia" class="btn btn-danger">
+                        <i class="fas fa-user-clock"></i>
+                        Relatório de Frequência Baixa (< 75%)
+                    </button>
+                    <p class="button-description">🔴 <strong>RESULTADO:</strong> Lista todos os alunos com frequência abaixo de 75% (risco de evasão)</p>
+                    
+                    <button id="relatorioCombinado" class="btn btn-primary">
+                        <i class="fas fa-layer-group"></i>
+                        Relatório Combinado (Notas & Frequência)
+                    </button>
+                    <p class="button-description">📋 <strong>RESULTADO:</strong> Mostra TODOS os alunos em situação de risco (notas baixas OU frequência baixa)</p>
+                </div>
+            </section>
+
+            <!-- Resumo por Série -->
+            <section class="series-summary-section section-border">
+                <h2><i class="fas fa-table"></i> Resumo por Série</h2>
+                <p class="section-description">📊 <strong>Esta área mostra:</strong> Quantidade de alunos por série, estatísticas de risco e acesso rápido aos dados</p>
+                <div id="seriesResumo" class="series-resumo-grid"></div>
+            </section>
+
+            <!-- Seção de Resultados dos Relatórios -->
+            <section id="resultadoRelatorios" class="result-section section-border" style="display: none;">
+                <h2 id="tituloRelatorio"><i class="fas fa-file-alt"></i> Relatório</h2>
+                <p class="section-description">📋 <strong>Esta área exibe:</strong> Resultados dos relatórios selecionados com detalhes completos de cada aluno em situação de risco</p>
+                <div id="conteudoRelatorio" class="report-content"></div>
+            </section>
+        </div>
+
+        <!-- Loading spinner -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Processando dados...</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Sistema de Análise de Desempenho Acadêmico - Desenvolvido para análise educacional</p>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
