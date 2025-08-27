@@ -40,6 +40,20 @@ header p {
     font-size: 1.2em;
 }
 
+header .subtitle-line {
+    font-size: 1.05em;
+    font-weight: 600;
+    color: #34495e;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+header .subtitle-school {
+    font-size: 0.95em;
+    letter-spacing: 0.5px;
+    color: #566573;
+    font-weight: 500;
+}
+
 .main-content {
     display: grid;
     gap: 30px;

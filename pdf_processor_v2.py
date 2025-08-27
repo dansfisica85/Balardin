@@ -323,6 +323,18 @@ class PDFProcessor:
     def get_student_data(self, serie, nome_aluno):
         """Retorna dados de um estudante específico"""
         return self.students_data.get(serie, {}).get(nome_aluno)
+
+    def get_students_by_file(self, file_code):
+        """Retorna lista de alunos cujo arquivo_origem corresponde ao código (ex: '1A').
+        file_code: string sem extensão. Compara com arquivo_origem (filename) ignorando .pdf case.
+        """
+        alvo = f"{file_code.upper()}.PDF"
+        resultado = []
+        for serie_dict in self.students_data.values():
+            for aluno in serie_dict.values():
+                if aluno.get('arquivo_origem', '').upper() == alvo:
+                    resultado.append(aluno)
+        return resultado
     
     def get_low_grades_report(self):
         """Gera relatório de estudantes com notas abaixo de 5"""
@@ -679,3 +691,27 @@ class PDFProcessor:
                     entry['risco_evasao'] = True
             combinado[serie] = list(alunos_map.values())
         return combinado
+
+    # ===================== EXPORTAÇÃO / IMPORTAÇÃO =====================
+    def export_data(self):
+        """Exporta estrutura principal para JSON serializável."""
+        plain = {}
+        for serie, alunos in self.students_data.items():
+            plain[serie] = {}
+            for nome, dados in alunos.items():
+                # Copiar dict (já composto de tipos básicos)
+                plain[serie][nome] = dados
+        return plain
+
+    def load_data(self, data_dict):
+        """Carrega estrutura previamente exportada (dict) em students_data."""
+        self.students_data.clear()
+        self.series_data.clear()
+        for serie, alunos in data_dict.items():
+            for nome, dados in alunos.items():
+                self.students_data[serie][nome] = dados
+                if nome not in self.series_data[serie]:
+                    self.series_data[serie].append(nome)
+        # Invalida caches
+        self._cache_series_summary = None
+        self._cache_global_discipline_summary = None
