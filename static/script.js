@@ -4,6 +4,8 @@ class SistemaAnalise {
     constructor() {
         this.serieSelect = document.getElementById('serieSelect');
         this.alunoSelect = document.getElementById('alunoSelect');
+    this.arquivoSelect = document.getElementById('arquivoSelect');
+    this.serieRelatorio = document.getElementById('serieRelatorio');
         this.buscarBtn = document.getElementById('buscarAluno');
         this.resultadoAluno = document.getElementById('resultadoAluno');
         this.dadosAluno = document.getElementById('dadosAluno');
@@ -23,6 +25,7 @@ class SistemaAnalise {
     
     init() {
         this.loadSeries();
+    this.loadArquivos();
     this.loadSeriesResumo();
         this.loadTurmasRelatorio();
         this.setupEventListeners();
@@ -38,6 +41,16 @@ class SistemaAnalise {
                 this.alunoSelect.innerHTML = '<option value="">Primeiro selecione uma série...</option>';
                 this.alunoSelect.disabled = true;
                 this.buscarBtn.disabled = true;
+            }
+        });
+
+        // Mudança de arquivo (turma)
+        this.arquivoSelect.addEventListener('change', ()=>{
+            const codigo = this.arquivoSelect.value;
+            if (codigo) {
+                this.loadTurma(codigo);
+            } else {
+                this.resultadoAluno.style.display = 'none';
             }
         });
         
@@ -95,6 +108,13 @@ class SistemaAnalise {
         this.showLoading();
         try {
             const response = await fetch(url);
+            
+            // Verificar se a resposta é HTML (erro comum no Netlify)
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                throw new Error('Servidor retornou HTML em vez de JSON. Verifique a configuração do Netlify.');
+            }
+            
             const data = await response.json();
             
             if (data.status === 'error') {
@@ -104,6 +124,13 @@ class SistemaAnalise {
             return data.data;
         } catch (error) {
             console.error('Erro na API:', error);
+            
+            // Fallback para dados hardcoded se a API falhar
+            if (url.includes('/api/turmas')) {
+                console.log('Usando fallback para turmas');
+                return ["1A", "1B", "1C", "1D", "1E", "2A", "2B", "2C", "2D", "2E", "2F", "3A", "3B", "3C", "3D", "3E", "3F", "3G", "6A", "6B", "7A", "7B", "7C", "8A", "8B", "8C", "9A", "9B"];
+            }
+            
             alert('Erro: ' + error.message);
             throw error;
         } finally {
@@ -124,6 +151,120 @@ class SistemaAnalise {
             });
         } catch (error) {
             console.error('Erro ao carregar séries:', error);
+        }
+    }
+
+    async loadArquivos() {
+        try {
+            const arquivos = await this.apiCall('/api/turmas');
+            this.arquivoSelect.innerHTML = '<option value="">Selecione...</option>';
+            if (this.serieRelatorio) this.serieRelatorio.innerHTML = '<option value="">Selecione...</option>';
+            arquivos.forEach(arq=>{
+                const opt = document.createElement('option');
+                opt.value = arq;
+                opt.textContent = arq;
+                this.arquivoSelect.appendChild(opt);
+                if (this.serieRelatorio){
+                    const opt2 = document.createElement('option');
+                    opt2.value = arq;
+                    opt2.textContent = arq;
+                    this.serieRelatorio.appendChild(opt2);
+                }
+            });
+            // Listener para select de relatório rápido
+            if (this.serieRelatorio && !this._serieRelatorioBound){
+                this._serieRelatorioBound = true;
+                this.serieRelatorio.addEventListener('change', ()=>{
+                    const cod = this.serieRelatorio.value;
+                    if (cod){
+                        this.loadTurma(cod);
+                    } else {
+                        this.resultadoAluno.style.display='none';
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Erro ao carregar turmas/arquivos', e);
+        }
+    }
+
+    async loadTurma(codigo){
+        try {
+            const alunos = await this.apiCall(`/api/turma/${encodeURIComponent(codigo)}`);
+            let html = `<h3>Relatório da Turma ${codigo}</h3>`;
+            if (alunos.length === 0) {
+                html += '<p>Nenhum aluno encontrado.</p>';
+            } else {
+                // Estatísticas agregadas
+                const total = alunos.length;
+                const freqMed = (alunos.reduce((acc,a)=>acc+parseFloat(a.frequencia_media||0),0)/total).toFixed(1);
+                html += `<p><strong>Total de alunos:</strong> ${total}</p>`;
+                html += `<p><strong>Frequência média da turma:</strong> ${freqMed}%</p>`;
+                
+                // Estatísticas por disciplina
+                const stats = {};
+                alunos.forEach(a=>{
+                    (a.disciplinas||[]).forEach(d=>{
+                        if (!stats[d.nome]) stats[d.nome]={notas:[],freqs:[]};
+                        if (d.media_semestral > 0) stats[d.nome].notas.push(d.media_semestral);
+                        if (d.freq_semestral > 0) stats[d.nome].freqs.push(d.freq_semestral);
+                    });
+                });
+                
+                if (Object.keys(stats).length>0){
+                    html += `<h4>Disciplinas</h4>`;
+                    html += `<table class="table table-striped" style="font-size:0.9em;">`;
+                    html += `<thead><tr><th>Disciplina</th><th>Média</th><th>Freq. Média</th><th>Alunos <5.0</th><th>Alunos <75%</th></tr></thead><tbody>`;
+                    Object.entries(stats).forEach(([nome,vals])=>{
+                        const medias = vals.notas;
+                        const freqs = vals.freqs;
+                        const med = medias.length ? (medias.reduce((a,b)=>a+b,0)/medias.length).toFixed(1) : '-';
+                        const freq = freqs.length ? (freqs.reduce((a,b)=>a+b,0)/freqs.length).toFixed(1) : '-';
+                        const abaixo5 = medias.filter(n=>n<5).length;
+                        const abaixo75 = freqs.filter(f=>f<75).length;
+                        html += `<tr><td>${nome}</td><td>${med}</td><td>${freq}%</td><td>${abaixo5}</td><td>${abaixo75}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                }
+                
+                // Lista de alunos com problemas
+                const alunosProblema = alunos.filter(a => {
+                    const temNotaBaixa = a.disciplinas.some(d => d.media_semestral > 0 && d.media_semestral < 5);
+                    const temFreqBaixa = a.frequencia_media < 75 || a.disciplinas.some(d => d.freq_semestral > 0 && d.freq_semestral < 75);
+                    return temNotaBaixa || temFreqBaixa;
+                });
+                
+                if (alunosProblema.length > 0) {
+                    html += `<h4>Alunos com Problemas (${alunosProblema.length})</h4>`;
+                    html += '<div class="problemas-lista">';
+                    alunosProblema.forEach(a => {
+                        const problemas = [];
+                        if (a.frequencia_media < 75) problemas.push(`Freq geral: ${a.frequencia_media}%`);
+                        a.disciplinas.forEach(d => {
+                            if (d.media_semestral > 0 && d.media_semestral < 5) 
+                                problemas.push(`${d.nome}: nota ${d.media_semestral}`);
+                            if (d.freq_semestral > 0 && d.freq_semestral < 75) 
+                                problemas.push(`${d.nome}: freq ${d.freq_semestral}%`);
+                        });
+                        html += `<div class="aluno-problema"><strong>${a.nome}</strong>: ${problemas.join(', ')}</div>`;
+                    });
+                    html += '</div>';
+                }
+                
+                // Lista completa de alunos
+                html += `<h4>Todos os Alunos (${total})</h4>`;
+                html += '<ul class="lista-turma">';
+                alunos.forEach(a=>{
+                    html += `<li>${a.nome} - ${a.serie} - Freq: ${a.frequencia_media}% - ${a.disciplinas.length} disciplinas</li>`;
+                });
+                html += '</ul>';
+            }
+            this.dadosAluno.innerHTML = html;
+            this.resultadoAluno.style.display = 'block';
+            this.resultadoAluno.scrollIntoView({ behavior: 'smooth' });
+        } catch (e) {
+            console.error('Erro ao carregar turma', e);
+            alert('Erro ao carregar dados da turma: ' + e.message);
         }
     }
 

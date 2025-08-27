@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório LIVIA - Levantamento de Informações Vinculadas à Infrequência e Avaliação</title>
+    <title>🎓LIVIA🌼 | Levantamento de Informações Vinculadas à Infrequência e Avaliação - E.E. Anna Passamonti Balardin</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fas fa-graduation-cap"></i>Relatório LIVIA - Levantamento de Informações Vinculadas à Infrequência e Avaliação</h1>
-            <p>Monitoramento de notas e frequência dos estudantes</p>
+            <h1>🎓LIVIA🌼</h1>
+            <p class="subtitle-line">📇Levantamento de 📊Informações 🔗Vinculadas à 📉Infrequência e 📝Avaliação</p>
+            <p class="subtitle-school">E.E. Anna Passamonti Balardin</p>
         </header>
 
         <div class="main-content">
@@ -19,6 +20,12 @@
             <section class="search-section">
                 <h2><i class="fas fa-search"></i> Busca Individual de Aluno</h2>
                 <div class="search-form">
+                    <div class="form-group">
+                        <label for="arquivoSelect">Turma (Arquivo):</label>
+                        <select id="arquivoSelect" class="form-control">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="serieSelect">Série/Ano:</label>
                         <select id="serieSelect" class="form-control">
@@ -48,6 +55,13 @@
             <!-- Seção de Relatórios -->
             <section class="reports-section">
                 <h2><i class="fas fa-chart-bar"></i> Relatórios Gerais</h2>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label for="serieRelatorio">Turma (Relatório rápido por arquivo PDF):</label>
+                    <select id="serieRelatorio" class="form-control" style="max-width:240px; margin-top:8px;">
+                        <option value="">Selecione...</option>
+                        <!-- Opções serão preenchidas dinamicamente -->
+                    </select>
+                </div>
                 <div class="reports-buttons">
                     <button id="relatorioNotas" class="btn btn-warning">
                         <i class="fas fa-exclamation-triangle"></i> 
