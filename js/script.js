@@ -212,13 +212,40 @@ class SistemaAnalise {
     }
     
     showDadosAluno(aluno) {
+        // Verificar se o aluno está em situação crítica
+        const notasBaixas = aluno.disciplinas ? aluno.disciplinas.some(d => d.media_semestral < 5) : false;
+        const frequenciaBaixa = aluno.frequencia_media < 75;
+        const situacaoCritica = notasBaixas && frequenciaBaixa;
+        
+        // Definir classe de alerta baseada na situação
+        let classeAlerta = '';
+        let iconeAlerta = '';
+        let textoAlerta = '';
+        
+        if (situacaoCritica) {
+            classeAlerta = 'alerta-critico';
+            iconeAlerta = '<i class="fas fa-exclamation-triangle icone-alerta-critico"></i>';
+            textoAlerta = '<div class="texto-alerta-critico">🚨 SITUAÇÃO CRÍTICA: Notas baixas E frequência baixa!</div>';
+        } else if (notasBaixas || frequenciaBaixa) {
+            classeAlerta = 'alerta-alto';
+            iconeAlerta = '<i class="fas fa-exclamation-circle icone-alerta-critico"></i>';
+            if (notasBaixas && !frequenciaBaixa) {
+                textoAlerta = '<div class="texto-alerta-critico">⚠️ RISCO DE REPROVAÇÃO: Notas abaixo de 5.0</div>';
+            } else if (frequenciaBaixa && !notasBaixas) {
+                textoAlerta = '<div class="texto-alerta-critico">⚠️ RISCO DE EVASÃO: Frequência abaixo de 75%</div>';
+            }
+        }
+        
         let html = `
-            <div class="student-info">
-                <h3>${aluno.nome}</h3>
+            <div class="student-info ${classeAlerta}">
+                ${textoAlerta}
+                <h3>${iconeAlerta}${aluno.nome}</h3>
                 <p><strong>RA:</strong> ${aluno.ra}</p>
                 <p><strong>Série:</strong> ${aluno.serie}</p>
                 <p><strong>Turma:</strong> ${aluno.turma}</p>
-                <p><strong>Frequência Média:</strong> ${aluno.frequencia_media}%</p>
+                <p><strong>Frequência Média:</strong> 
+                    <span class="${frequenciaBaixa ? 'valor-critico' : ''}">${aluno.frequencia_media}%</span>
+                </p>
                 <p><strong>Total de Faltas:</strong> ${aluno.total_faltas}</p>
             </div>
         `;
@@ -226,16 +253,26 @@ class SistemaAnalise {
         if (aluno.disciplinas && aluno.disciplinas.length > 0) {
             html += '<div class="disciplinas-grid">';
             aluno.disciplinas.forEach(disciplina => {
-                const problema = disciplina.media_semestral < 5 || disciplina.freq_semestral < 75;
+                const notaBaixa = disciplina.media_semestral < 5;
+                const freqBaixa = disciplina.freq_semestral < 75;
+                const problemaGrave = notaBaixa && freqBaixa;
+                
+                let classeDisciplina = '';
+                if (problemaGrave) {
+                    classeDisciplina = 'problema alerta-critico';
+                } else if (notaBaixa || freqBaixa) {
+                    classeDisciplina = 'problema alerta-alto';
+                }
+                
                 html += `
-                    <div class="disciplina-card ${problema ? 'problema' : ''}">
+                    <div class="disciplina-card ${classeDisciplina}">
                         <h4>${disciplina.nome}</h4>
                         <div class="notas-info">
-                            <div class="nota-item ${disciplina.media_semestral < 5 ? 'media-baixa' : ''}">
-                                Média: ${disciplina.media_semestral}
+                            <div class="nota-item ${notaBaixa ? 'media-baixa' : ''}">
+                                Média: <span class="${notaBaixa ? 'valor-critico' : ''}">${disciplina.media_semestral}</span>
                             </div>
-                            <div class="freq-item ${disciplina.freq_semestral < 75 ? (disciplina.freq_semestral < 60 ? 'freq-muito-baixa' : 'freq-baixa') : ''}">
-                                Freq: ${disciplina.freq_semestral}%
+                            <div class="freq-item ${freqBaixa ? (disciplina.freq_semestral < 60 ? 'freq-muito-baixa' : 'freq-baixa') : ''}">
+                                Freq: <span class="${freqBaixa ? 'valor-critico' : ''}">${disciplina.freq_semestral}%</span>
                             </div>
                         </div>
                     </div>
@@ -338,13 +375,29 @@ class SistemaAnalise {
         `;
         
         alunos.forEach(aluno => {
+            // Verificar se também tem frequência baixa (situação crítica)
+            const frequenciaBaixa = aluno.frequencia_media < 75;
+            const situacaoCritica = frequenciaBaixa;
+            
+            let classeAlerta = situacaoCritica ? 'alerta-critico' : 'alerta-nota-critica';
+            let iconeAlerta = situacaoCritica ? 
+                '<i class="fas fa-exclamation-triangle icone-alerta-critico"></i>' : 
+                '<i class="fas fa-exclamation-circle"></i>';
+            let textoAlerta = situacaoCritica ? 
+                '🚨 CRÍTICO: Notas baixas + Frequência baixa!' : 
+                '⚠️ Risco de Reprovação';
+            
             html += `
-                <div class="estudante-item risco-reprovacao">
-                    <h4>${aluno.nome} - ${aluno.serie}</h4>
+                <div class="estudante-item risco-reprovacao ${classeAlerta}">
+                    <div class="texto-alerta-critico">${textoAlerta}</div>
+                    <h4>${iconeAlerta}${aluno.nome} - ${aluno.serie}</h4>
+                    <p><strong>Frequência:</strong> 
+                        <span class="${frequenciaBaixa ? 'valor-critico' : ''}">${aluno.frequencia_media}%</span>
+                    </p>
                     <div class="disciplinas-problema">
             `;
             aluno.disciplinas_problema.forEach(d => {
-                html += `<div class="disciplina-problema">📘 ${d.nome}: média ${d.media_semestral}</div>`;
+                html += `<div class="disciplina-problema">📘 ${d.nome}: média <span class="valor-critico">${d.media_semestral}</span></div>`;
             });
             html += `
                     </div>
@@ -384,12 +437,35 @@ class SistemaAnalise {
         `;
         
         alunos.sort((a, b) => a.frequencia_media - b.frequencia_media).forEach(aluno => {
+            // Verificar se também tem notas baixas (situação crítica)
+            const notasBaixas = aluno.disciplinas ? 
+                aluno.disciplinas.some(d => d.media_semestral < 5) : false;
             const riscoAlto = aluno.frequencia_media < 60;
+            const situacaoCritica = notasBaixas;
+            
+            let classeAlerta = 'alerta-frequencia-critica';
+            if (situacaoCritica) {
+                classeAlerta = 'alerta-critico';
+            } else if (riscoAlto) {
+                classeAlerta = 'alerta-frequencia-critica';
+            }
+            
+            let iconeAlerta = situacaoCritica ? 
+                '<i class="fas fa-exclamation-triangle icone-alerta-critico"></i>' : 
+                '<i class="fas fa-user-clock"></i>';
+            let textoAlerta = situacaoCritica ? 
+                '🚨 CRÍTICO: Frequência baixa + Notas baixas!' : 
+                (riscoAlto ? '🔴 Alto Risco de Evasão' : '⚠️ Risco de Evasão');
+            
             html += `
-                <div class="estudante-item ${riscoAlto ? 'risco-evasao' : ''}">
-                    <h4>${aluno.nome} - ${aluno.serie}</h4>
-                    <p><strong>Frequência:</strong> ${aluno.frequencia_media}%</p>
+                <div class="estudante-item ${classeAlerta}">
+                    <div class="texto-alerta-critico">${textoAlerta}</div>
+                    <h4>${iconeAlerta}${aluno.nome} - ${aluno.serie}</h4>
+                    <p><strong>Frequência:</strong> 
+                        <span class="valor-critico">${aluno.frequencia_media}%</span>
+                    </p>
                     <p><strong>Total de faltas:</strong> ${aluno.total_faltas}</p>
+                    ${situacaoCritica ? '<p><strong>⚠️ Também tem notas baixas!</strong></p>' : ''}
                 </div>
             `;
         });

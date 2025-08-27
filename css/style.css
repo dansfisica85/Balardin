@@ -482,6 +482,150 @@ footer {
 .mt-20 { margin-top: 20px; }
 .mb-20 { margin-bottom: 20px; }
 
+/* ========================================= */
+/* ALERTAS CRÍTICOS - ANIMAÇÕES DE PISCADA */
+/* ========================================= */
+
+/* Alerta CRÍTICO - Notas baixas E frequência baixa */
+.alerta-critico {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    border: 4px solid #921e1e !important;
+    color: white !important;
+    animation: piscar-critico 1.5s infinite;
+    box-shadow: 0 0 30px rgba(231, 76, 60, 0.8) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.alerta-critico::before {
+    content: "⚠️ RISCO CRÍTICO ⚠️";
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #921e1e;
+    color: #fff;
+    padding: 5px 10px;
+    font-size: 0.8em;
+    font-weight: bold;
+    border-radius: 0 0 0 10px;
+    animation: piscar-texto 1s infinite;
+}
+
+@keyframes piscar-critico {
+    0%, 50% { 
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        box-shadow: 0 0 30px rgba(231, 76, 60, 0.8);
+    }
+    51%, 100% { 
+        background: linear-gradient(135deg, #ff6b6b, #e74c3c);
+        box-shadow: 0 0 40px rgba(255, 107, 107, 1);
+    }
+}
+
+@keyframes piscar-texto {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.7; }
+}
+
+/* Alerta ALTO - Só notas baixas OU só frequência baixa */
+.alerta-alto {
+    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+    border: 3px solid #d68910 !important;
+    color: white !important;
+    animation: piscar-alto 2s infinite;
+    box-shadow: 0 0 20px rgba(243, 156, 18, 0.6) !important;
+}
+
+@keyframes piscar-alto {
+    0%, 70% { 
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+        box-shadow: 0 0 20px rgba(243, 156, 18, 0.6);
+    }
+    71%, 100% { 
+        background: linear-gradient(135deg, #f1c40f, #f39c12);
+        box-shadow: 0 0 25px rgba(241, 196, 15, 0.8);
+    }
+}
+
+/* Alerta de frequência específico */
+.alerta-frequencia-critica {
+    border-left: 8px solid #e74c3c !important;
+    background: linear-gradient(135deg, #fadbd8, #f1948a) !important;
+    animation: piscar-frequencia 1.8s infinite;
+}
+
+@keyframes piscar-frequencia {
+    0%, 60% { 
+        background: linear-gradient(135deg, #fadbd8, #f1948a);
+    }
+    61%, 100% { 
+        background: linear-gradient(135deg, #f5b7b1, #ec7063);
+    }
+}
+
+/* Alerta de nota específico */
+.alerta-nota-critica {
+    border-left: 8px solid #f39c12 !important;
+    background: linear-gradient(135deg, #fef9e7, #fcf3cf) !important;
+    animation: piscar-nota 2.2s infinite;
+}
+
+@keyframes piscar-nota {
+    0%, 65% { 
+        background: linear-gradient(135deg, #fef9e7, #fcf3cf);
+    }
+    66%, 100% { 
+        background: linear-gradient(135deg, #fdeaa7, #f7dc6f);
+    }
+}
+
+/* Texto de alertas */
+.texto-alerta-critico {
+    font-weight: bold !important;
+    font-size: 1.1em !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+/* Ícones de alerta animados */
+.icone-alerta-critico {
+    animation: balanca-icone 1s infinite;
+    font-size: 1.3em !important;
+    margin-right: 8px;
+}
+
+@keyframes balanca-icone {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+
+/* Destaque para valores críticos */
+.valor-critico {
+    background: #e74c3c !important;
+    color: white !important;
+    padding: 3px 8px !important;
+    border-radius: 15px !important;
+    font-weight: bold !important;
+    animation: pulsa-valor 1.3s infinite;
+}
+
+@keyframes pulsa-valor {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Responsividade para alertas */
+@media (max-width: 768px) {
+    .alerta-critico::before {
+        font-size: 0.7em;
+        padding: 3px 6px;
+    }
+    
+    .icone-alerta-critico {
+        font-size: 1.1em !important;
+    }
+}
+
 /* Animações */
 .fade-in {
     animation: fadeIn 0.5s ease-in;
