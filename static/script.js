@@ -16,6 +16,7 @@ class SistemaAnalise {
         this.reprocessarBtn = document.getElementById('reprocessar');
         this.loading = document.getElementById('loading');
     this.seriesResumoContainer = document.getElementById('seriesResumo');
+        this.serieRelatorioSelect = document.getElementById('serieRelatorio');
         
         this.init();
     }
@@ -23,6 +24,7 @@ class SistemaAnalise {
     init() {
         this.loadSeries();
     this.loadSeriesResumo();
+        this.loadTurmasRelatorio();
         this.setupEventListeners();
     }
     
@@ -63,6 +65,16 @@ class SistemaAnalise {
         });
         this.relatorioCombinado.addEventListener('click', () => {
             this.loadRelatorioCombinado();
+        });
+        
+        // Event listener para seleção de turma no relatório
+        this.serieRelatorioSelect.addEventListener('change', () => {
+            const turma = this.serieRelatorioSelect.value;
+            if (turma) {
+                console.log('Turma selecionada:', turma);
+                // Aqui você pode adicionar funcionalidade específica para quando uma turma é selecionada
+                // Por exemplo: this.loadRelatorioTurma(turma);
+            }
         });
         
         // Reprocessar PDFs
@@ -130,6 +142,31 @@ class SistemaAnalise {
             this.seriesResumoContainer.innerHTML = html;
         } catch (e) {
             console.error('Erro ao carregar resumo séries', e);
+        }
+    }
+
+    async loadTurmasRelatorio() {
+        try {
+            // Lista das turmas conforme especificado
+            const turmas = [
+                '1A', '1B', '1C', '1D', '1E',
+                '2A', '2B', '2C', '2D', '2E', '2F',
+                '3A', '3B', '3C', '3D', '3E', '3F', '3G',
+                '6A', '6B',
+                '7A', '7B', '7C',
+                '8A', '8B', '8C',
+                '9A', '9B'
+            ];
+            
+            this.serieRelatorioSelect.innerHTML = '<option value="">Selecione...</option>';
+            turmas.forEach(turma => {
+                const option = document.createElement('option');
+                option.value = turma;
+                option.textContent = turma;
+                this.serieRelatorioSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Erro ao carregar turmas para relatório:', error);
         }
     }
     
