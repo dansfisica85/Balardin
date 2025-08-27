@@ -2,8 +2,19 @@
 
 * {
     margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    p/* Descrições dos botões */
+.button-description {
+    font-size: 0.95em;
+    color: #2c3e50;
+    margin: 10px 0;
+    padding: 10px 15px;
+    background: linear-gradient(135deg, #ecf0f1, #d5dbdb);
+    border-left: 4px solid #27ae60;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+h2 {x-sizing: border-box;
 }
 
 body {
@@ -48,6 +59,51 @@ header p {
 section {
     background: rgba(255, 255, 255, 0.95);
     padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+/* Molduras escuras para separar seções */
+.section-border {
+    border: 3px solid #2c3e50;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    margin-bottom: 25px;
+}
+
+/* Descrições das seções */
+.section-description {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    border-left: 5px solid #1a252f;
+}
+
+/* Descrições dos campos */
+.field-description {
+    font-size: 0.9em;
+    color: #555;
+    margin: 5px 0 10px 0;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-left: 3px solid #3498db;
+    border-radius: 4px;
+}
+
+/* Descrições dos botões */
+.button-description {
+    font-size: 0.95em;
+    color: #2c3e50;
+    margin: 10px 0;
+    padding: 10px 15px;
+    background: linear-gradient(135deg, #ecf0f1, #d5dbdb);
+    border-left: 4px solid #27ae60;
+    border-radius: 6px;
+    font-weight: 500;
+}
     border-radius: 15px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
