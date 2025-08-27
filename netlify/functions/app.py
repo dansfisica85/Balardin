@@ -1,91 +1,173 @@
 import json
 import os
-import sys
-
-# Adicionar diretório pai ao path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(os.path.dirname(current_dir))
-sys.path.insert(0, project_root)
-
-try:
-    from pdf_processor_v2 import PDFProcessor
-except ImportError as e:
-    print(f"Import error: {e}")
 
 def handler(event, context):
-    """Handler para Netlify Functions"""
-    print("[handler] Event path:", event.get('path'), "method:", event.get('httpMethod'))
+    """Função Netlify simplificada e robusta"""
+    
+    # Headers CORS padrão
+    headers = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+    }
+    
     try:
-        raw_path = event.get('path', '/')
-        prefix = '/.netlify/functions/app'
-        if raw_path.startswith(prefix):
-            path = raw_path[len(prefix):] or '/'
-        else:
-            path = raw_path
-        print('[handler] Normalized path:', path)
-
+        # Log do evento
+        path = event.get('path', '/')
         method = event.get('httpMethod', 'GET')
+        print(f"[Netlify] {method} {path}")
+        
+        # Tratar OPTIONS (CORS preflight)
         if method == 'OPTIONS':
             return {
-                'statusCode': 204,
-                'headers': {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type'
-                },
+                'statusCode': 200,
+                'headers': headers,
                 'body': ''
             }
-
-        # Instanciar processor e carregar dados
-        pdf_processor = PDFProcessor()
-        data_path = os.path.join(project_root, 'data', 'alunos_compilado.json')
-        if not os.path.exists(data_path):
-            return _resp(500, {"status":"error","message":"JSON compilado ausente"})
-        with open(data_path, 'r', encoding='utf-8') as f:
-            pdf_processor.load_data(json.load(f))
-
-        # Roteamento
-        if path in ('/api/ping','/ping'):
-            return _resp(200, {"status":"ok","message":"pong","available_endpoints":["/api/turmas","/api/turma/<codigo>","/api/series","/api/alunos/<serie>","/api/aluno/<serie>/<nome>"]})
-        if path in ('/api/turmas','/turmas'):
+        
+        # Normalizar path (remover prefixo da função)
+        if path.startswith('/.netlify/functions/app'):
+            path = path[len('/.netlify/functions/app'):] or '/'
+        
+        print(f"[Netlify] Normalized path: {path}")
+        
+        # Carregar dados compilados
+        try:
+            # Tentar vários caminhos possíveis para o JSON
+            possible_paths = [
+                'data/alunos_compilado.json',
+                './data/alunos_compilado.json',
+                '/opt/build/repo/data/alunos_compilado.json',
+                os.path.join(os.getcwd(), 'data', 'alunos_compilado.json')
+            ]
+            
+            data = None
+            for json_path in possible_paths:
+                if os.path.exists(json_path):
+                    print(f"[Netlify] Found JSON at: {json_path}")
+                    with open(json_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    break
+            
+            if data is None:
+                # Listar arquivos disponíveis para debug
+                files = []
+                try:
+                    for root, dirs, file_list in os.walk('.'):
+                        if 'alunos_compilado.json' in file_list:
+                            files.append(os.path.join(root, 'alunos_compilado.json'))
+                except:
+                    pass
+                
+                return {
+                    'statusCode': 500,
+                    'headers': headers,
+                    'body': json.dumps({
+                        'status': 'error',
+                        'message': 'JSON compilado não encontrado',
+                        'searched_paths': possible_paths,
+                        'found_files': files,
+                        'cwd': os.getcwd()
+                    })
+                }
+                
+        except Exception as e:
+            return {
+                'statusCode': 500,
+                'headers': headers,
+                'body': json.dumps({
+                    'status': 'error',
+                    'message': f'Erro ao carregar JSON: {str(e)}'
+                })
+            }
+        
+        # Roteamento simplificado
+        if path in ('/api/ping', '/ping', '/'):
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': json.dumps({
+                    'status': 'ok',
+                    'message': 'Netlify function is working',
+                    'data_loaded': bool(data),
+                    'series_count': len(data) if data else 0
+                })
+            }
+        
+        elif path in ('/api/turmas', '/turmas'):
+            # Extrair códigos das turmas dos dados
             codigos = set()
-            for serie in pdf_processor.students_data.values():
-                for aluno in serie.values():
-                    arq = aluno.get('arquivo_origem','')
-                    if arq.lower().endswith('.pdf'):
-                        base = os.path.splitext(arq)[0].strip().replace('\r','').replace('\n','')
-                        codigos.add(base)
-            codigos = sorted(codigos)
-            return _resp(200, {"status":"success","data":codigos})
-        if path.startswith('/api/turma/') or path.startswith('/turma/'):
+            for serie_data in data.values():
+                for aluno in serie_data.values():
+                    arquivo = aluno.get('arquivo_origem', '')
+                    if arquivo.endswith('.pdf'):
+                        codigo = arquivo[:-4].strip()
+                        codigos.add(codigo)
+            
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': json.dumps({
+                    'status': 'success',
+                    'data': sorted(list(codigos))
+                })
+            }
+        
+        elif path.startswith('/api/turma/') or path.startswith('/turma/'):
+            # Obter dados de uma turma específica
             codigo = path.split('/')[-1]
-            alunos = pdf_processor.get_students_by_file(codigo)
-            return _resp(200, {"status":"success","data":alunos})
-        if path in ('/api/series','/series'):
-            return _resp(200, {"status":"success","data":sorted(pdf_processor.students_data.keys())})
-        if path.startswith('/api/alunos/') or path.startswith('/alunos/'):
-            serie = path.split('/')[-1]
-            alunos = pdf_processor.get_students_by_serie(serie)
-            return _resp(200, {"status":"success","data":sorted(alunos)})
-        if path.startswith('/api/aluno/'):
-            parts = path.split('/')
-            if len(parts) >= 4:
-                serie = parts[-2]
-                nome = parts[-1]
-                dados = pdf_processor.get_student_data(serie, nome)
-                if dados:
-                    return _resp(200, {"status":"success","data":{"aluno":dados}})
-            return _resp(404, {"status":"error","message":"Aluno não encontrado"})
-        return _resp(404, {"status":"error","message":f"Endpoint não encontrado: {path}"})
+            alunos_turma = []
+            
+            for serie_data in data.values():
+                for aluno in serie_data.values():
+                    arquivo = aluno.get('arquivo_origem', '')
+                    if arquivo.endswith('.pdf') and arquivo[:-4].strip() == codigo:
+                        alunos_turma.append({
+                            'nome': aluno.get('nome', ''),
+                            'ra': aluno.get('ra', ''),
+                            'serie': aluno.get('serie', ''),
+                            'turma': aluno.get('turma', ''),
+                            'frequencia_media': aluno.get('frequencia_media', 0),
+                            'total_faltas': aluno.get('total_faltas', 0)
+                        })
+            
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': json.dumps({
+                    'status': 'success',
+                    'data': alunos_turma
+                })
+            }
+        
+        elif path in ('/api/series', '/series'):
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': json.dumps({
+                    'status': 'success',
+                    'data': sorted(list(data.keys()))
+                })
+            }
+        
+        else:
+            return {
+                'statusCode': 404,
+                'headers': headers,
+                'body': json.dumps({
+                    'status': 'error',
+                    'message': f'Endpoint não encontrado: {path}'
+                })
+            }
+            
     except Exception as e:
-        return _resp(500, {"status":"error","message":str(e)})
-
-def _resp(status, payload):
-    return {
-        'statusCode': status,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'body': json.dumps(payload, ensure_ascii=False)
-    }
+        print(f"[Netlify] Error: {str(e)}")
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({
+                'status': 'error',
+                'message': f'Erro interno: {str(e)}'
+            })
+        }
