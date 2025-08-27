@@ -1,11 +1,10 @@
 [build]
-  command = "pip install -r requirements.txt && python build_data.py"
+  command = "python build_data.py"
   functions = "netlify/functions"
   publish = "."
-  included_files = ["data/alunos_compilado.json", "*.pdf"]
 
 [build.environment]
-  PYTHON_VERSION = "3.9"
+  PYTHON_VERSION = "3.8"
 
 [[redirects]]
   from = "/api/*"
@@ -13,16 +12,10 @@
   status = 200
   force = true
 
-[build.processing]
-  skip_processing = false
-[build.processing.css]
-  bundle = true
-  minify = true
-[build.processing.js]
-  bundle = true
-  minify = true
-[build.processing.html]
-  pretty_urls = true
+[[redirects]]
+  from = "/test"
+  to = "/.netlify/functions/test"
+  status = 200
 
 [[redirects]]
   from = "/*"
