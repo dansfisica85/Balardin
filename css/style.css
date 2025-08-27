@@ -81,29 +81,6 @@ section {
     font-size: 1.1em;
     border-left: 5px solid #1a252f;
 }
-
-/* Descrições dos campos */
-.field-description {
-    font-size: 0.9em;
-    color: #555;
-    margin: 5px 0 10px 0;
-    padding: 8px 12px;
-    background: #f8f9fa;
-    border-left: 3px solid #3498db;
-    border-radius: 4px;
-}
-
-/* Descrições dos botões */
-.button-description {
-    font-size: 0.95em;
-    color: #2c3e50;
-    margin: 10px 0;
-    padding: 10px 15px;
-    background: linear-gradient(135deg, #ecf0f1, #d5dbdb);
-    border-left: 4px solid #27ae60;
-    border-radius: 6px;
-    font-weight: 500;
-}
     border-radius: 15px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
@@ -483,6 +460,76 @@ footer {
 .mb-20 { margin-bottom: 20px; }
 
 /* ========================================= */
+/* TOOLTIPS HOVER */
+/* ========================================= */
+
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip {
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 300px;
+    white-space: normal;
+    text-align: left;
+    line-height: 1.4;
+}
+
+.tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-top-color: #2c3e50;
+}
+
+.tooltip-container:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+    bottom: 130%;
+}
+
+/* Tooltip específico para botões */
+.btn-tooltip {
+    position: relative;
+}
+
+.btn-tooltip .tooltip {
+    bottom: 120%;
+    min-width: 250px;
+}
+
+.btn-tooltip:hover .tooltip {
+    bottom: 125%;
+}
+
+/* Tooltip para labels */
+.form-group label.tooltip-container {
+    cursor: help;
+}
+
+.form-group label.tooltip-container:hover {
+    color: #3498db;
+}
+
+/* ========================================= */
 /* ALERTAS CRÍTICOS - ANIMAÇÕES DE PISCADA */
 /* ========================================= */
 
@@ -492,7 +539,7 @@ footer {
     border: 4px solid #921e1e !important;
     color: white !important;
     animation: piscar-critico 1.5s infinite;
-    box-shadow: 0 0 30px rgba(231, 76, 60, 0.8) !important;
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.4) !important;
     position: relative;
     overflow: hidden;
 }
@@ -514,11 +561,11 @@ footer {
 @keyframes piscar-critico {
     0%, 50% { 
         background: linear-gradient(135deg, #e74c3c, #c0392b);
-        box-shadow: 0 0 30px rgba(231, 76, 60, 0.8);
+        box-shadow: 0 0 15px rgba(231, 76, 60, 0.4);
     }
     51%, 100% { 
         background: linear-gradient(135deg, #ff6b6b, #e74c3c);
-        box-shadow: 0 0 40px rgba(255, 107, 107, 1);
+        box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
     }
 }
 
@@ -533,17 +580,17 @@ footer {
     border: 3px solid #d68910 !important;
     color: white !important;
     animation: piscar-alto 2s infinite;
-    box-shadow: 0 0 20px rgba(243, 156, 18, 0.6) !important;
+    box-shadow: 0 0 10px rgba(243, 156, 18, 0.3) !important;
 }
 
 @keyframes piscar-alto {
     0%, 70% { 
         background: linear-gradient(135deg, #f39c12, #e67e22);
-        box-shadow: 0 0 20px rgba(243, 156, 18, 0.6);
+        box-shadow: 0 0 10px rgba(243, 156, 18, 0.3);
     }
     71%, 100% { 
         background: linear-gradient(135deg, #f1c40f, #f39c12);
-        box-shadow: 0 0 25px rgba(241, 196, 15, 0.8);
+        box-shadow: 0 0 15px rgba(241, 196, 15, 0.4);
     }
 }
 

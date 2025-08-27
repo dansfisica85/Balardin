@@ -23,33 +23,41 @@
                 
                 <div class="search-form">
                     <div class="form-group">
-                        <label for="arquivoSelect">📁 Turma (Arquivo PDF):</label>
-                        <p class="field-description">Seleciona o arquivo PDF da turma (ex: 1A.pdf, 2B.pdf) - <em>Mostra as turmas disponíveis</em></p>
+                        <label for="arquivoSelect" class="tooltip-container">
+                            📁 Turma (Arquivo PDF):
+                            <div class="tooltip">Seleciona o arquivo PDF da turma (ex: 1A.pdf, 2B.pdf) - Mostra as turmas disponíveis para análise</div>
+                        </label>
                         <select id="arquivoSelect" class="form-control">
                             <option value="">Selecione...</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
-                        <label for="serieSelect">🎓 Série/Ano:</label>
-                        <p class="field-description">Filtra por série/ano escolar após selecionar a turma - <em>Organiza alunos por nível</em></p>
+                        <label for="serieSelect" class="tooltip-container">
+                            🎓 Série/Ano:
+                            <div class="tooltip">Filtra por série/ano escolar após selecionar a turma - Organiza alunos por nível educacional</div>
+                        </label>
                         <select id="serieSelect" class="form-control">
                             <option value="">Selecione uma série...</option>
                         </select>
                     </div>
                                         
                     <div class="form-group">
-                        <label for="alunoSelect">👤 Aluno:</label>
-                        <p class="field-description">Lista todos os alunos da série selecionada - <em>Escolha o estudante para ver dados detalhados</em></p>
+                        <label for="alunoSelect" class="tooltip-container">
+                            👤 Aluno:
+                            <div class="tooltip">Lista todos os alunos da série selecionada - Escolha o estudante para ver dados detalhados</div>
+                        </label>
                         <select id="alunoSelect" class="form-control" disabled>
                             <option value="">Primeiro selecione uma série...</option>
                         </select>
                     </div>
                                         
-                    <button id="buscarAluno" class="btn btn-primary" disabled>
-                        <i class="fas fa-search"></i> Buscar Dados do Aluno
-                    </button>
-                    <p class="button-description">📊 <strong>RESULTADO:</strong> Exibe notas completas, médias, frequência e alertas de risco do aluno selecionado</p>
+                    <div class="btn-tooltip">
+                        <button id="buscarAluno" class="btn btn-primary" disabled>
+                            <i class="fas fa-search"></i> Buscar Dados do Aluno
+                        </button>
+                        <div class="tooltip">📊 RESULTADO: Exibe notas completas, médias, frequência e alertas de risco do aluno selecionado</div>
+                    </div>
                 </div>
             </section>
             
@@ -66,8 +74,10 @@
                 <p class="section-description">📊 <strong>Esta seção gera relatórios completos de toda a escola ou turma específica.</strong></p>
                 
                 <div class="form-group" style="margin-bottom:20px;">
-                    <label for="serieRelatorio">🎯 Turma (Filtro para Relatórios):</label>
-                    <p class="field-description">Seleciona uma turma específica para relatórios focados - <em>Deixe vazio para relatório geral de toda escola</em></p>
+                    <label for="serieRelatorio" class="tooltip-container">
+                        🎯 Turma (Filtro para Relatórios):
+                        <div class="tooltip">Seleciona uma turma específica para relatórios focados - Deixe vazio para relatório geral de toda escola</div>
+                    </label>
                     <select id="serieRelatorio" class="form-control" style="max-width:300px; margin-top:8px;">
                         <option value="">📋 Selecione (vazio = todas as turmas)...</option>
                         <!-- Opções serão preenchidas dinamicamente -->
@@ -75,23 +85,29 @@
                 </div>
                 
                 <div class="reports-buttons">
-                    <button id="relatorioNotas" class="btn btn-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Relatório de Notas Baixas (< 5.0)
-                    </button>
-                    <p class="button-description">⚠️ <strong>RESULTADO:</strong> Lista todos os alunos com médias abaixo de 5.0 (risco de reprovação)</p>
+                    <div class="btn-tooltip">
+                        <button id="relatorioNotas" class="btn btn-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Relatório de Notas Baixas (< 5.0)
+                        </button>
+                        <div class="tooltip">⚠️ RESULTADO: Lista todos os alunos com médias abaixo de 5.0 (risco de reprovação)</div>
+                    </div>
                                         
-                    <button id="relatorioFrequencia" class="btn btn-danger">
-                        <i class="fas fa-user-clock"></i>
-                        Relatório de Frequência Baixa (< 75%)
-                    </button>
-                    <p class="button-description">🔴 <strong>RESULTADO:</strong> Lista todos os alunos com frequência abaixo de 75% (risco de evasão)</p>
+                    <div class="btn-tooltip">
+                        <button id="relatorioFrequencia" class="btn btn-danger">
+                            <i class="fas fa-user-clock"></i>
+                            Relatório de Frequência Baixa (< 75%)
+                        </button>
+                        <div class="tooltip">🔴 RESULTADO: Lista todos os alunos com frequência abaixo de 75% (risco de evasão)</div>
+                    </div>
                     
-                    <button id="relatorioCombinado" class="btn btn-primary">
-                        <i class="fas fa-layer-group"></i>
-                        Relatório Combinado (Notas & Frequência)
-                    </button>
-                    <p class="button-description">📋 <strong>RESULTADO:</strong> Mostra TODOS os alunos em situação de risco (notas baixas OU frequência baixa)</p>
+                    <div class="btn-tooltip">
+                        <button id="relatorioCombinado" class="btn btn-primary">
+                            <i class="fas fa-layer-group"></i>
+                            Relatório Combinado (Notas & Frequência)
+                        </button>
+                        <div class="tooltip">📋 RESULTADO: Mostra TODOS os alunos em situação de risco (notas baixas OU frequência baixa)</div>
+                    </div>
                 </div>
             </section>
 
