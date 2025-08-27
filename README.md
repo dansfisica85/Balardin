@@ -26,22 +26,178 @@ Sistema web estático para análise de dados educacionais com funcionalidades de
 ## ✨ Funcionalidades
 
 ### 🔍 Busca Individual
-- Seleção por série/ano
+- Seleção por turma e série/ano
 - Busca específica por aluno
 - Visualização detalhada de notas e frequência
 - Alertas automáticos para:
-  - **Risco de Reprovação**: Médias < 5.0
-  - **Risco de Evasão**: Frequência < 75%
+  - **🔴 Risco de Evasão**: Frequência < 75%
+  - **⚠️ Risco de Reprovação**: Médias < 5.0
 
 ### 📊 Relatórios Gerais
 - **Relatório de Notas Baixas**: Estudantes com médias < 5.0 agrupados por série
 - **Relatório de Frequência Baixa**: Estudantes com frequência < 75% agrupados por série
+- **Relatório Combinado**: Análise integrada de ambos os riscos
 
-### ⚡ Recursos Adicionais
-- Processamento automático de PDFs
-- Interface responsiva e intuitiva
-- Alertas visuais com destaque para riscos
-- Reprocessamento de dados em tempo real
+### ⚡ Recursos Técnicos
+- **100% Estático**: Sem necessidade de servidor backend
+- **Dados Compilados**: JSON pré-processado para carregamento rápido
+- **Interface Responsiva**: Funciona em desktop, tablet e mobile
+- **Alertas Visuais**: Destaque automático para situações de risco
+
+## 📁 Estrutura do Projeto
+
+```
+Balardin/
+├── index.html              # Página principal
+├── css/
+│   └── style.css          # Estilos CSS
+├── js/
+│   └── script.js          # JavaScript principal
+├── data/
+│   └── alunos_compilado.json  # Dados dos alunos (compilados)
+├── vercel.json            # Configuração do Vercel
+├── *.pdf                  # Arquivos PDF originais
+└── README.md              # Este arquivo
+```
+
+## 🎯 Como Usar
+
+### 1. Busca Individual de Aluno
+1. **Turma**: Selecione no primeiro dropdown (ex: 1A, 2B, 3C)
+2. **Série**: Escolha a série/ano
+3. **Aluno**: Selecione o estudante específico
+4. **Buscar**: Clique no botão para visualizar dados completos
+
+### 2. Relatórios por Risco
+- **🟡 Notas Baixas**: Estudantes com risco de reprovação
+- **🔴 Frequência Baixa**: Estudantes com risco de evasão  
+- **🔵 Combinado**: Visualização integrada dos riscos
+
+### 3. Resumo por Série
+- Visão geral de todas as séries
+- Contadores de alunos por situação
+- Acesso rápido aos relatórios específicos
+
+## 📋 Dados Suportados
+
+### Formato dos Arquivos
+- **PDFs Originais**: `1A.pdf`, `1B.pdf`, `2A.pdf`, etc.
+- **Dados Compilados**: `data/alunos_compilado.json`
+
+### Critérios de Risco
+- **Risco de Reprovação**: Média semestral < 5.0
+- **Risco de Evasão**: Frequência semestral < 75%
+
+### Informações Extraídas
+- Nome completo do aluno
+- RA (Registro Acadêmico)
+- Série e turma
+- Notas por disciplina (1º e 2º bimestres)
+- Médias semestrais calculadas
+- Frequência por disciplina e geral
+
+## 🛠️ Desenvolvimento Local
+
+```bash
+# Clone o repositório
+git clone https://github.com/dansfisica85/Balardin.git
+cd Balardin
+
+# Sirva os arquivos estáticos
+python -m http.server 8000
+# ou
+npx serve .
+
+# Acesse no navegador
+open http://localhost:8000
+```
+
+## ⚙️ Configuração Técnica
+
+### Vercel
+O arquivo `vercel.json` está configurado para:
+- Servir arquivos estáticos
+- Cache otimizado para performance
+- Headers corretos para JSON
+- Redirects para SPA behavior
+
+### Performance
+- **Dados pré-compilados**: JSON estático para carregamento rápido
+- **CSS/JS minificados**: Código otimizado para produção
+- **Cache headers**: Configuração para cache eficiente
+- **Responsive design**: Interface adaptável
+
+## 🔧 Personalização
+
+### Modificar Critérios de Risco
+No arquivo `js/script.js`, procure por:
+```javascript
+// Critério de nota baixa
+if (media < 5.0) { ... }
+
+// Critério de frequência baixa  
+if (frequencia < 75) { ... }
+```
+
+### Atualizar Dados
+1. Substitua os PDFs na pasta raiz
+2. Execute `python build_data.py` (se disponível)
+3. Faça commit do novo `data/alunos_compilado.json`
+4. Deploy automático no Vercel
+
+## 🎨 Interface
+
+- **Design Moderno**: Interface limpa e intuitiva
+- **Cores Temáticas**: Verde para aprovação, amarelo para atenção, vermelho para risco
+- **Animações Sutis**: Feedback visual para ações do usuário
+- **Acessibilidade**: Contrastes adequados e navegação por teclado
+
+## 📱 Responsividade
+
+- **Desktop**: Layout completo com todas as funcionalidades
+- **Tablet**: Interface adaptada para toque
+- **Mobile**: Design otimizado para telas pequenas
+
+## 🐛 Solução de Problemas
+
+### Dados não carregam
+1. Verifique se `data/alunos_compilado.json` existe
+2. Abra o console do navegador (F12) para ver erros
+3. Verifique se está servindo via HTTP (não file://)
+
+### Interface quebrada
+1. Confirme que `css/style.css` e `js/script.js` estão acessíveis
+2. Verifique se os paths estão corretos
+3. Teste em modo incógnito para evitar cache
+
+### Deploy no Vercel
+1. Confirme que o repositório está público ou conectado
+2. Verifique se `vercel.json` está na raiz
+3. Confira os logs de build no dashboard do Vercel
+
+## 📊 Tecnologias
+
+- **Frontend**: HTML5, CSS3, JavaScript ES6+
+- **Dados**: JSON estático pré-compilado
+- **Deploy**: Vercel, GitHub Pages
+- **Design**: CSS Grid, Flexbox, Responsive Design
+- **Performance**: Service Workers ready, optimized assets
+
+## 📄 Licença
+
+Sistema desenvolvido para análise educacional. Livre para uso e modificação conforme necessidades específicas da instituição.
+
+## 🆘 Suporte
+
+Para dúvidas ou problemas:
+1. 📖 Consulte este README
+2. 🔍 Verifique o console do navegador (F12)
+3. 🌐 Teste o deploy no Vercel
+4. 📧 Abra uma issue no GitHub
+
+---
+
+**Desenvolvido com ❤️ para educação de qualidade**
 
 ## Instalação
 
