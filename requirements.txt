@@ -1,2 +1,0 @@
-# Minimal dependencies for Netlify Functions
-# No dependencies needed for the simplified function
